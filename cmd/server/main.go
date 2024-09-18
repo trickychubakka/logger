@@ -94,7 +94,6 @@ func counterMetricHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/update/gauge/", gaugeMetricHandler)
 	mux.HandleFunc("/update/counter/", counterMetricHandler)
