@@ -20,9 +20,7 @@ var store = MemStorage{gaugeMap: make(map[string]float64), counterMap: make(map[
 // Константа для кодирования смысла полей после парсинга URL на основе их порядкового номера
 // Пример: localhost:8080/update/gauge/metric2/777.4
 const (
-	//update  = 0
-	metricType = 1
-	//counter = 1
+	metricType  = 1
 	metricName  = 2
 	metricValue = 3
 )
@@ -44,51 +42,6 @@ func urlToMap(url string) ([]string, error) {
 	fmt.Println("urlToMap:", splittedURL)
 	return splittedURL, nil
 }
-
-//func gaugeMetricHandler(w http.ResponseWriter, r *http.Request) {
-//	splittedURL, err := urlToMap(r.URL.String())
-//	if err != nil {
-//		w.WriteHeader(http.StatusNotFound)
-//		return
-//	}
-//	fmt.Println("URL.String is:", r.URL.String(), "\nsplittedURL is:", splittedURL, "len is:", len(splittedURL))
-//	s, err := strconv.ParseFloat(splittedURL[metricValue], 64)
-//	if err == nil && (splittedURL[metricType] == "gauge" || splittedURL[metricType] == "counter") {
-//		// записываем метрику в хранилище
-//		fmt.Println("metric is:", splittedURL[metricName], "\nmetricValue is:", splittedURL[metricValue])
-//		store.gaugeMap[splittedURL[metricName]] = s
-//		// Формируем ответ
-//		w.Header().Set("content-type", "text/plain; charset=utf-8")
-//		w.WriteHeader(http.StatusOK)
-//		fmt.Println("Response is:", w)
-//	} else {
-//		fmt.Println("ERROR: There is no metric or wrong metric type -- must be float64")
-//		w.WriteHeader(http.StatusBadRequest)
-//	}
-//	fmt.Println(store)
-//}
-
-//func counterMetricHandler(w http.ResponseWriter, r *http.Request) {
-//	splittedURL, err := urlToMap(r.URL.String())
-//	if err != nil {
-//		w.WriteHeader(http.StatusNotFound)
-//		return
-//	}
-//	fmt.Println("URL.String is:", r.URL.String(), "\nsplittedURL is:", splittedURL, "len is:", len(splittedURL))
-//	if s, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
-//		// записываем метрику в хранилище
-//		fmt.Println("metric is:", splittedURL[metricName], "\nmetricValue is:", splittedURL[metricValue])
-//		store.counterMap[splittedURL[metricName]] += s
-//		// Формируем ответ
-//		w.Header().Set("content-type", "text/plain; charset=utf-8")
-//		w.WriteHeader(http.StatusOK)
-//		fmt.Println("Response is:", w)
-//	} else {
-//		fmt.Println(s, "There is no metric or wrong metric type -- must be int")
-//		w.WriteHeader(http.StatusBadRequest)
-//	}
-//	fmt.Println(store)
-//}
 
 func metricHandler(w http.ResponseWriter, r *http.Request) {
 	splittedURL, err := urlToMap(r.URL.String())
@@ -134,7 +87,6 @@ func metricHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/update/", metricHandler)
-	//mux.HandleFunc("/update/counter/", counterMetricHandler)
 
 	err := http.ListenAndServe(`:8080`, mux)
 	if err != nil {
