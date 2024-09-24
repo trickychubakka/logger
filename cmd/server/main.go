@@ -3,19 +3,24 @@ package main
 import (
 	"errors"
 	"fmt"
+	"memstorage"
+
+	//"github.com/trickychubakka/logger/cmd/server/storage/memstorage"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-// MemStorage Хранилище для метрик. Разные map-ы для разных типов метрик
-type MemStorage struct {
-	gaugeMap   map[string]float64
-	counterMap map[string]int64
-}
+//// MemStorage Хранилище для метрик. Разные map-ы для разных типов метрик
+//type MemStorage struct {
+//	gaugeMap   map[string]float64
+//	counterMap map[string]int64
+//}
+//
+//// Создание хранилища
+//var store = MemStorage{gaugeMap: make(map[string]float64), counterMap: make(map[string]int64)}
 
-// Создание хранилища
-var store = MemStorage{gaugeMap: make(map[string]float64), counterMap: make(map[string]int64)}
+var store = memstorage.New()
 
 // Константа для кодирования смысла полей после парсинга URL на основе их порядкового номера
 // Пример: localhost:8080/update/gauge/metric2/777.4
@@ -53,8 +58,12 @@ func metricHandler(w http.ResponseWriter, r *http.Request) {
 	if splittedURL[metricType] == "gauge" {
 		if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
 			// записываем метрику в хранилище
-			fmt.Println("metricType is:", splittedURL[metricType], "| metricName is:", splittedURL[metricName], "| metricValue is:", splittedURL[metricValue])
-			store.gaugeMap[splittedURL[metricName]] = val
+			//fmt.Println("metricType is:", splittedURL[metricType], "| metricName is:", splittedURL[metricName], "| metricValue is:", splittedURL[metricValue])
+			//store.gaugeMap[splittedURL[metricName]] = val
+			if err := store.UpdateGauge(splittedURL[metricName], val); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		} else {
 			fmt.Println("ERROR: There is no metric or wrong metric value type -- must be float64")
 			w.WriteHeader(http.StatusBadRequest)
@@ -64,8 +73,13 @@ func metricHandler(w http.ResponseWriter, r *http.Request) {
 	} else if splittedURL[metricType] == "counter" {
 		if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
 			// записываем метрику в хранилище
-			fmt.Println("metricType is:", splittedURL[metricType], "| metricName is:", splittedURL[metricName], "| metricValue is:", splittedURL[metricValue])
-			store.counterMap[splittedURL[metricName]] += val
+			//fmt.Println("metricType is:", splittedURL[metricType], "| metricName is:", splittedURL[metricName], "| metricValue is:", splittedURL[metricValue])
+			//store.counterMap[splittedURL[metricName]] += val
+			//store.UpdateCounter(splittedURL[metricName], val)
+			if err := store.UpdateCounter(splittedURL[metricName], val); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
 		} else {
 			fmt.Println("There is no metric or wrong metric value type -- must be int")
 			w.WriteHeader(http.StatusBadRequest)
