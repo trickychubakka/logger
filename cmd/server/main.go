@@ -3,9 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"memstorage"
-	//"github.com/trickychubakka/logger/cmd/server/storage/memstorage"
 	"net/http"
+	"server/storage/memstorage"
 	"strconv"
 	"strings"
 )
@@ -63,20 +62,20 @@ func metricHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			fmt.Println("There is no metric or wrong metric value type -- must be int64")
+			fmt.Println("ERROR: There is no metric or wrong metric value type -- must be int64")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		// Неправильный тип метрики
 	} else {
-		fmt.Println("Wrong metric type")
+		fmt.Println("ERROR: Wrong metric type")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	// Формируем ответ
 	w.Header().Set("content-type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	//fmt.Println(store)
+	fmt.Println(store)
 }
 
 func main() {

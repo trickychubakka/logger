@@ -1,7 +1,7 @@
 package memstorage
 
 import (
-	"storage"
+	"server/storage"
 )
 
 // MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик
