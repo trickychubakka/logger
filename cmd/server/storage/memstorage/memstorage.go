@@ -2,7 +2,6 @@ package memstorage
 
 import (
 	"storage"
-	//"github.com/trickychubakka/logger/cmd/server/storage"
 )
 
 // MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик
