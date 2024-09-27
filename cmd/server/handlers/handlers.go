@@ -34,7 +34,7 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
-// metricHandler handler обработки запросов
+// MetricHandler handler обработки запросов
 func MetricHandler(w http.ResponseWriter, r *http.Request) {
 	splittedURL, err := urlToMap(r.URL.String())
 	if err != nil {
