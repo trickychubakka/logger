@@ -92,9 +92,11 @@ func SendMetrics(metrics *Metrics, c string) error {
 		url := c + "/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
 		fmt.Println(m, "=>", metrics.gaugeMap[m], "url:", url)
 
-		if _, err := SendRequest(client, url); err != nil {
+		response, err := SendRequest(client, url)
+		if err != nil {
 			return err
 		}
+		response.Body.Close()
 	}
 
 	// Цикл для отсылки метрик типа counterMap
@@ -102,9 +104,11 @@ func SendMetrics(metrics *Metrics, c string) error {
 		url := c + "/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
 		fmt.Println(m, "=>", metrics.counterMap[m], "url:", url)
 
-		if _, err := SendRequest(client, url); err != nil {
+		response, err := SendRequest(client, url)
+		if err != nil {
 			return err
 		}
+		response.Body.Close()
 	}
 	return nil
 }

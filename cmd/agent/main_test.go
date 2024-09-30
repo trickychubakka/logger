@@ -153,6 +153,7 @@ func TestSendRequest(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
+			res.Body.Close()
 		})
 	}
 }
