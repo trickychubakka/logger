@@ -12,6 +12,7 @@ import (
 const (
 	pollInterval   = 2
 	reportInterval = 10
+	handlerURL     = "http://localhost:8080/update"
 )
 
 type Metrics struct {
@@ -57,13 +58,14 @@ func MetricsPolling(metrics *Metrics) error {
 }
 
 // SendRequest выполнение запроса с метриками
-func SendRequest(client *http.Client, url string) error {
+func SendRequest(client *http.Client, url string) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		panic(err)
 	}
 
-	req.Header.Set("Content-Type", "Content-Type: text/plain")
+	req.Header.Set("Content-Type", "text/plain")
+	fmt.Println("req.Header is:", req.Header)
 
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 	response, err := client.Do(req)
@@ -75,36 +77,35 @@ func SendRequest(client *http.Client, url string) error {
 	//io.Copy(os.Stdout, response.Body) // Вывод ответа в консоль
 	err = response.Body.Close()
 	if err != nil {
-		return err
+		return response, err
 	}
 
-	return nil
+	return response, nil
 }
 
 // SendMetrics отсылка метрик на сервер
-func SendMetrics(metrics *Metrics) error {
+func SendMetrics(metrics *Metrics, c string) error {
 	client := &http.Client{}
 
 	// Цикл для отсылки метрик типа gaugeMap
 	for m := range metrics.gaugeMap {
-		url := "http://localhost:8080/update/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
+		url := c + "/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
 		fmt.Println(m, "=>", metrics.gaugeMap[m], "url:", url)
 
-		if err := SendRequest(client, url); err != nil {
+		if _, err := SendRequest(client, url); err != nil {
 			return err
 		}
 	}
 
 	// Цикл для отсылки метрик типа counterMap
 	for m := range metrics.counterMap {
-		url := "http://localhost:8080/update/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
+		url := c + "/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
 		fmt.Println(m, "=>", metrics.counterMap[m], "url:", url)
 
-		if err := SendRequest(client, url); err != nil {
+		if _, err := SendRequest(client, url); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
 
@@ -118,7 +119,7 @@ func main() {
 			fmt.Println("\nmetrics:", metrics)
 			time.Sleep(pollInterval * time.Second)
 		}
-		if err := SendMetrics(&metrics); err != nil {
+		if err := SendMetrics(&metrics, handlerURL); err != nil {
 			fmt.Println(err)
 		}
 	}
