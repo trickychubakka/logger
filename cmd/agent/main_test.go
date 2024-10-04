@@ -157,3 +157,75 @@ func TestSendRequest(t *testing.T) {
 		})
 	}
 }
+
+func Test_initConfig(t *testing.T) {
+	type args struct {
+		h    string
+		r    string
+		p    string
+		conf Config
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Positive Test initConfig",
+			args: args{
+				h:    "localhost:8080",
+				r:    "20",
+				p:    "4",
+				conf: Config{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Negative Test initConfig, wrong URL",
+			args: args{
+				h:    "768587^67868&&*",
+				r:    "2",
+				p:    "10",
+				conf: Config{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative Test initConfig, wrong reportInterval",
+			args: args{
+				h:    "localhost:8080",
+				r:    "here must be string of int",
+				p:    "10",
+				conf: Config{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative Test initConfig, wrong pollingInterval",
+			args: args{
+				h:    "localhost:8080",
+				r:    "2",
+				p:    "here must be string of int",
+				conf: Config{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Negative Test initConfig, poll interval must be less than report interval",
+			args: args{
+				h:    "localhost:8080",
+				r:    "1",
+				p:    "10",
+				conf: Config{},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
+				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

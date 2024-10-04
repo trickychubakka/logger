@@ -1,19 +1,47 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"reflect"
 	"runtime"
+	"strconv"
 	"time"
 )
 
-const (
-	pollInterval   = 2
-	reportInterval = 10
-	handlerURL     = "http://localhost:8080/update"
-)
+type Config struct {
+	pollInterval   int
+	reportInterval int
+	handlerURL     string
+}
+
+// initConfig функция инициализации конфигурации агента с использованием параметров командной строки
+func initConfig(h, r, p string, conf *Config) error {
+	if _, err := url.ParseRequestURI(h); err != nil {
+		return err
+	}
+	conf.handlerURL = h
+
+	if c, err := strconv.Atoi(r); err == nil {
+		conf.reportInterval = c
+	} else {
+		return err
+	}
+
+	if c, err := strconv.Atoi(p); err == nil {
+		conf.pollInterval = c
+	} else {
+		return err
+	}
+
+	if conf.pollInterval > conf.reportInterval {
+		return errors.New("poll interval must be less than report interval")
+	}
+	return nil
+}
 
 type Metrics struct {
 	gaugeMap   map[string]float64
@@ -89,10 +117,10 @@ func SendMetrics(metrics *Metrics, c string) error {
 
 	// Цикл для отсылки метрик типа gaugeMap
 	for m := range metrics.gaugeMap {
-		url := c + "/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
-		fmt.Println(m, "=>", metrics.gaugeMap[m], "url:", url)
+		reqURL := c + "/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
+		fmt.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL)
 
-		response, err := SendRequest(client, url)
+		response, err := SendRequest(client, reqURL)
 		if err != nil {
 			return err
 		}
@@ -101,10 +129,10 @@ func SendMetrics(metrics *Metrics, c string) error {
 
 	// Цикл для отсылки метрик типа counterMap
 	for m := range metrics.counterMap {
-		url := c + "/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
-		fmt.Println(m, "=>", metrics.counterMap[m], "url:", url)
+		reqURL := c + "/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
+		fmt.Println(m, "=>", metrics.counterMap[m], "url:", reqURL)
 
-		response, err := SendRequest(client, url)
+		response, err := SendRequest(client, reqURL)
 		if err != nil {
 			return err
 		}
@@ -114,16 +142,25 @@ func SendMetrics(metrics *Metrics, c string) error {
 }
 
 func main() {
+
+	parseFlags()
+
+	conf := new(Config)
+	if err := initConfig(AddressFlag, ReportIntervalFlag, PollingIntervalFlag, conf); err != nil {
+		panic(err)
+	}
+	fmt.Printf("Address is %s, PollInterval is %d, ReportInterval is %d", conf.handlerURL, conf.pollInterval, conf.reportInterval)
+
 	metrics := NewMetricsObj()
 	for {
-		for i := 0; i < reportInterval; i = i + pollInterval {
+		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
 			if err := MetricsPolling(&metrics); err != nil {
 				fmt.Println(err)
 			}
 			fmt.Println("\nmetrics:", metrics)
-			time.Sleep(pollInterval * time.Second)
+			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
-		if err := SendMetrics(&metrics, handlerURL); err != nil {
+		if err := SendMetrics(&metrics, "http://"+conf.handlerURL+"/update"); err != nil {
 			fmt.Println(err)
 		}
 	}
