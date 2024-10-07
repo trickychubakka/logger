@@ -149,7 +149,6 @@ func TestSendRequest(t *testing.T) {
 			defer server.Close()
 			res, err := SendRequest(tt.args.client, server.URL+tt.args.url)
 			assert.Equal(t, tt.want.code, res.StatusCode)
-			//assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
 			}
