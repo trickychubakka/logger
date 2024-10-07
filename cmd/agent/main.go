@@ -1,7 +1,6 @@
 package main
 
 import (
-	"agent/metrics"
 	"fmt"
 	"time"
 )
@@ -20,16 +19,16 @@ func main() {
 
 	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d", conf.address, conf.pollInterval, conf.reportInterval)
 
-	myMetrics := metrics.NewMetricsObj()
+	myMetrics := NewMetricsObj()
 	for {
 		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
-			if err := metrics.MetricsPolling(&myMetrics); err != nil {
+			if err := MetricsPolling(&myMetrics); err != nil {
 				fmt.Println(err)
 			}
 			fmt.Println("\nmetrics:", myMetrics)
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
-		if err := metrics.SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
+		if err := SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
 			fmt.Println(err)
 		}
 	}
