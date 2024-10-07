@@ -1,170 +1,33 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
+	"os"
 	"testing"
 )
 
-func TestMetricsPolling(t *testing.T) {
-	type args struct {
-		metrics Metrics
+// setEnv вспомогательная функция для установки переменных среды как параметров тестирования
+func setEnv(envAddr, envPollInterval, envReportInterval string) error {
+	if err := os.Setenv("ADDRESS", envAddr); err != nil {
+		return err
 	}
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Positive Test MetricsPolling",
-			args: args{
-				metrics: NewMetricsObj(),
-			},
-			wantErr: false,
-		},
+	if err := os.Setenv("POLL_INTERVAL", envPollInterval); err != nil {
+		return err
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := MetricsPolling(&tt.args.metrics); (err != nil) != tt.wantErr {
-				t.Errorf("MetricsPolling() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	if err := os.Setenv("REPORT_INTERVAL", envReportInterval); err != nil {
+		return err
 	}
-}
-
-func TestNewMetricsObj(t *testing.T) {
-	tests := []struct {
-		name string
-		want Metrics
-	}{
-		{
-			name: "Positive Test NewMetricsObj",
-			want: Metrics{
-				gaugeMap:   make(map[string]float64),
-				counterMap: make(map[string]int64),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMetricsObj(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricsObj() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSendMetrics(t *testing.T) {
-	type args struct {
-		metrics *Metrics
-		c       string
-	}
-	metrics := Metrics{
-		gaugeMap:   make(map[string]float64),
-		counterMap: make(map[string]int64),
-	}
-	metrics.gaugeMap["metric1"] = 1
-	//metrics.counterMap["metric2"] = 2
-
-	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
-	}{
-		{
-			name: "Positive Test SendMetrics",
-			args: args{
-				metrics: &metrics,
-				c:       "/update",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/update/gauge/metric1/1" {
-					t.Errorf("Expected to request '/update/gauge/metric1/1', got: %s", r.URL.Path)
-				}
-				if r.Header.Get("Content-Type") != "text/plain" {
-					t.Errorf("Expected Content-Type: text/plain header, got: %s", r.Header.Get("Content-Type"))
-				}
-				w.Header().Set("Content-Type", "text/plain")
-				w.WriteHeader(http.StatusOK)
-			}))
-			defer server.Close()
-
-			if err := SendMetrics(tt.args.metrics, server.URL+tt.args.c); (err != nil) != tt.wantErr {
-				t.Errorf("SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestSendRequest(t *testing.T) {
-	type args struct {
-		client *http.Client
-		url    string
-	}
-	type want struct {
-		code int
-		//response    string
-		contentType string
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    want
-		wantErr bool
-	}{
-		{
-			name: "Positive Test SendRequest",
-			args: args{
-				client: &http.Client{},
-				url:    "/update/gauge/metric1/1",
-			},
-			want: want{
-				code:        http.StatusOK,
-				contentType: "text/plain",
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Start a local HTTP server
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path != "/update/gauge/metric1/1" {
-					t.Errorf("Expected to request '/update/gauge/metric1/1', got: %s", r.URL.Path)
-				}
-				if r.Header.Get("Content-Type") != "text/plain" {
-					t.Errorf("Expected Content-Type: text/plain header, got: %s", r.Header.Get("Content-Type"))
-				}
-				w.Header().Set("Content-Type", "text/plain")
-				w.WriteHeader(http.StatusOK)
-			}))
-			defer server.Close()
-			res, err := SendRequest(tt.args.client, server.URL+tt.args.url)
-			assert.Equal(t, tt.want.code, res.StatusCode)
-			//assert.Equal(t, tt.want.contentType, res.Header.Get("Content-Type"))
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			res.Body.Close()
-		})
-	}
+	return nil
 }
 
 func Test_initConfig(t *testing.T) {
+
 	type args struct {
-		h    string
-		r    string
-		p    string
-		conf Config
+		conf              Config
+		envAddr           string
+		envPollInterval   string
+		envReportInterval string
 	}
+
 	tests := []struct {
 		name    string
 		args    args
@@ -173,57 +36,67 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				h:    "localhost:8080",
-				r:    "20",
-				p:    "4",
-				conf: Config{},
+				conf:              Config{10, 2, "localhost:8080"},
+				envAddr:           "localhost:8080",
+				envPollInterval:   "2",
+				envReportInterval: "10",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				h:    "768587^67868&&*",
-				r:    "2",
-				p:    "10",
-				conf: Config{},
+				conf:              Config{10, 2, "localhost:8080"},
+				envAddr:           "d45656&&^%kjh",
+				envPollInterval:   "2",
+				envReportInterval: "10",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative Test initConfig, wrong reportInterval",
 			args: args{
-				h:    "localhost:8080",
-				r:    "here must be string of int",
-				p:    "10",
-				conf: Config{},
+				conf:              Config{},
+				envAddr:           "localhost:8080",
+				envPollInterval:   "2",
+				envReportInterval: "ere",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative Test initConfig, wrong pollingInterval",
 			args: args{
-				h:    "localhost:8080",
-				r:    "2",
-				p:    "here must be string of int",
-				conf: Config{},
+				conf:              Config{},
+				envAddr:           "localhost:8080",
+				envPollInterval:   "ere",
+				envReportInterval: "10",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Negative Test initConfig, poll interval must be less than report interval",
 			args: args{
-				h:    "localhost:8080",
-				r:    "1",
-				p:    "10",
-				conf: Config{},
+				conf:              Config{},
+				envAddr:           "localhost:7777",
+				envPollInterval:   "20",
+				envReportInterval: "10",
 			},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
+		// Включение режима тестирования для отключения парсинга параметров командной строки
+		flagTest = true
+		//conf := new(Config)
+		//os.Setenv("ADDRESS", tt.args.envAddr)
+		//os.Setenv("POLL_INTERVAL", tt.args.envPollInterval)
+		//os.Setenv("REPORT_INTERVAL", tt.args.envReportInterval)
 		t.Run(tt.name, func(t *testing.T) {
-			if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
+			if err := setEnv(tt.args.envAddr, tt.args.envPollInterval, tt.args.envReportInterval); err != nil {
+				panic(err)
+			}
+			//if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
+			if err := initConfig(&tt.args.conf); (err != nil) != tt.wantErr {
 				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

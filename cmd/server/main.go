@@ -5,9 +5,15 @@ import (
 	"server/handlers"
 )
 
+var conf Config
+
 func main() {
 
-	parseFlags()
+	//var conf Config
+
+	if err := initConfig(&conf); err != nil {
+		panic(err)
+	}
 
 	//gin.SetMode(gin.ReleaseMode)
 
@@ -16,7 +22,7 @@ func main() {
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric)
 
-	err := router.Run(flagRunAddr)
+	err := router.Run(conf.runAddr)
 	if err != nil {
 		panic(err)
 	}
