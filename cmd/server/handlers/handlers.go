@@ -159,7 +159,10 @@ func GetMetric(c *gin.Context) {
 	} else {
 		switch val.(type) {
 		case float64:
-			c.String(http.StatusOK, fmt.Sprintf("%f", val.(float64)))
+			{
+				//fmt.Println(fmt.Sprintf("%g", val.(float64)))
+				c.String(http.StatusOK, fmt.Sprintf("%g", val.(float64)))
+			}
 		case int64:
 			c.String(http.StatusOK, fmt.Sprintf("%d", val.(int64)))
 		}
