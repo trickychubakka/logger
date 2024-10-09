@@ -2,7 +2,7 @@ package memstorage
 
 import (
 	"errors"
-	"server/storage"
+	"logger/internal/storage"
 )
 
 // MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик

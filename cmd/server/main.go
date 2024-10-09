@@ -3,7 +3,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	"server/handlers"
+	"logger/internal/handlers"
 )
 
 var conf Config

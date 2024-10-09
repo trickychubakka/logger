@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"logger/internal"
 	"time"
 )
 
@@ -19,16 +20,16 @@ func main() {
 
 	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d", conf.address, conf.pollInterval, conf.reportInterval)
 
-	myMetrics := NewMetricsObj()
+	myMetrics := internal.NewMetricsObj()
 	for {
 		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
-			if err := MetricsPolling(&myMetrics); err != nil {
+			if err := internal.MetricsPolling(&myMetrics); err != nil {
 				fmt.Println(err)
 			}
 			fmt.Println("\nmetrics:", myMetrics)
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
-		if err := SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
+		if err := internal.SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
 			fmt.Println(err)
 		}
 	}

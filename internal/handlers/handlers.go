@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"logger/internal/storage/memstorage"
 	"net/http"
-	"server/storage/memstorage"
 	"strconv"
 	"strings"
 )

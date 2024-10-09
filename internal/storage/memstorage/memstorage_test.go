@@ -1,8 +1,8 @@
 package memstorage
 
 import (
+	"logger/internal/storage"
 	"reflect"
-	"server/storage"
 	"testing"
 )
 
