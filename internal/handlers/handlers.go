@@ -157,14 +157,16 @@ func GetMetric(c *gin.Context) {
 		fmt.Println("Error in GetMetric:", err)
 		c.Status(http.StatusNotFound)
 	} else {
-		switch val.(type) {
+		switch v := val.(type) {
 		case float64:
 			{
 				//fmt.Println(fmt.Sprintf("%g", val.(float64)))
-				c.String(http.StatusOK, fmt.Sprintf("%g", val.(float64)))
+				//c.String(http.StatusOK, fmt.Sprintf("%g", val.(float64)))
+				c.String(http.StatusOK, fmt.Sprintf("%g", v))
 			}
 		case int64:
-			c.String(http.StatusOK, fmt.Sprintf("%d", val.(int64)))
+			//c.String(http.StatusOK, fmt.Sprintf("%d", val.(int64)))
+			c.String(http.StatusOK, fmt.Sprintf("%d", v))
 		}
 	}
 
