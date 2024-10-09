@@ -8,6 +8,9 @@ import (
 
 var conf Config
 
+// flagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
+var flagTest = false
+
 func main() {
 
 	//var conf Config

@@ -87,10 +87,7 @@ func Test_initConfig(t *testing.T) {
 	for _, tt := range tests {
 		// Включение режима тестирования для отключения парсинга параметров командной строки
 		flagTest = true
-		//conf := new(Config)
-		//os.Setenv("ADDRESS", tt.args.envAddr)
-		//os.Setenv("POLL_INTERVAL", tt.args.envPollInterval)
-		//os.Setenv("REPORT_INTERVAL", tt.args.envReportInterval)
+
 		t.Run(tt.name, func(t *testing.T) {
 			if err := setEnv(tt.args.envAddr, tt.args.envPollInterval, tt.args.envReportInterval); err != nil {
 				panic(err)
