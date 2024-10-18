@@ -10,7 +10,7 @@ import (
 
 func TestMetricsPolling(t *testing.T) {
 	type args struct {
-		metrics Metrics
+		metrics MetricsStorage
 	}
 	tests := []struct {
 		name    string
@@ -20,7 +20,7 @@ func TestMetricsPolling(t *testing.T) {
 		{
 			name: "Positive Test MetricsPolling",
 			args: args{
-				metrics: NewMetricsObj(),
+				metrics: NewMetricsStorageObj(),
 			},
 			wantErr: false,
 		},
@@ -37,11 +37,11 @@ func TestMetricsPolling(t *testing.T) {
 func TestNewMetricsObj(t *testing.T) {
 	tests := []struct {
 		name string
-		want Metrics
+		want MetricsStorage
 	}{
 		{
 			name: "Positive Test NewMetricsObj",
-			want: Metrics{
+			want: MetricsStorage{
 				gaugeMap:   make(map[string]float64),
 				counterMap: make(map[string]int64),
 			},
@@ -49,7 +49,7 @@ func TestNewMetricsObj(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewMetricsObj(); !reflect.DeepEqual(got, tt.want) {
+			if got := NewMetricsStorageObj(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewMetricsObj() = %v, want %v", got, tt.want)
 			}
 		})
@@ -58,10 +58,10 @@ func TestNewMetricsObj(t *testing.T) {
 
 func TestSendMetrics(t *testing.T) {
 	type args struct {
-		metrics *Metrics
+		metrics *MetricsStorage
 		c       string
 	}
-	metrics := Metrics{
+	metrics := MetricsStorage{
 		gaugeMap:   make(map[string]float64),
 		counterMap: make(map[string]int64),
 	}
@@ -146,8 +146,9 @@ func TestSendRequest(t *testing.T) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.WriteHeader(http.StatusOK)
 			}))
+
 			defer server.Close()
-			res, err := SendRequest(tt.args.client, server.URL+tt.args.url)
+			res, err := SendRequest(tt.args.client, server.URL+tt.args.url, nil, "text/plain")
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)

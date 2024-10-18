@@ -18,7 +18,7 @@ type Config struct {
 	logfile        string
 }
 
-func Is_valid_ip(ip string) bool {
+func IsValidIp(ip string) bool {
 	res := net.ParseIP(ip)
 	if res == nil {
 		return false
@@ -54,7 +54,7 @@ func initConfig(conf *Config) error {
 	}
 
 	// Проверка на то, что заданный адрес является валидным IP или URI
-	if Is_valid_ip(strings.Split(AddressFlag, ":")[0]) {
+	if IsValidIp(strings.Split(AddressFlag, ":")[0]) {
 		log.Println("AddressFlag is IP address, Using IP:", AddressFlag)
 	} else if _, err := url.ParseRequestURI(AddressFlag); err != nil {
 		return err

@@ -17,7 +17,7 @@ type MetricsStorage struct {
 	counterMap map[string]int64
 }
 
-func NewMetricsObj() MetricsStorage {
+func NewMetricsStorageObj() MetricsStorage {
 	return MetricsStorage{
 		gaugeMap:   make(map[string]float64),
 		counterMap: make(map[string]int64),
