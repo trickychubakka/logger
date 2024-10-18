@@ -110,8 +110,7 @@ func TestSendRequest(t *testing.T) {
 		url    string
 	}
 	type want struct {
-		code int
-		//response    string
+		code        int
 		contentType string
 	}
 	tests := []struct {
@@ -135,7 +134,7 @@ func TestSendRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Start a local HTTP server
+			// Start mock local HTTP server fo test
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path != "/update/gauge/metric1/1" {
 					t.Errorf("Expected to request '/update/gauge/metric1/1', got: %s", r.URL.Path)

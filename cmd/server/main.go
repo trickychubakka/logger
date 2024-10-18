@@ -12,8 +12,8 @@ import (
 var conf Config
 var sugar zap.SugaredLogger
 
-// flagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
-var flagTest = false
+// FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
+var FlagTest = false
 
 func main() {
 

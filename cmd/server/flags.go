@@ -15,7 +15,7 @@ type Config struct {
 	runAddr string
 }
 
-// Is_valid_ip функция для проверки на то, что строка является валидным ip адресом
+// IsValidIP функция для проверки на то, что строка является валидным ip адресом
 func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
 	return res != nil
@@ -25,11 +25,11 @@ func IsValidIP(ip string) bool {
 	//return true
 }
 
-//var flagTest = false
+//var FlagTest = false
 
 func initConfig(conf *Config) error {
 
-	if !flagTest {
+	if !FlagTest {
 		flag.StringVar(&conf.runAddr, "a", "localhost:8080", "address and port to run server")
 		flag.Parse()
 	}

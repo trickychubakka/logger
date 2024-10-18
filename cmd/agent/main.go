@@ -10,8 +10,8 @@ import (
 
 var conf Config
 
-// flagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
-var flagTest = false
+// FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
+var FlagTest = false
 
 // run функция выполнения цикла поллинга метрик
 func run(myMetrics internal.MetricsStorage) {

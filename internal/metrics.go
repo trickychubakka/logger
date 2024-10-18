@@ -89,11 +89,11 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL)
 
 		response, err := SendRequest(client, reqURL, nil, "text/plain")
-		defer response.Body.Close()
-
 		if err != nil {
 			return err
 		}
+		defer response.Body.Close()
+
 		//response.Body.Close()
 		log.Println("response status:", response.Status)
 	}
@@ -109,7 +109,8 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
 		}
-		//
+		defer response.Body.Close()
+
 		log.Println("response status:", response.Status)
 	}
 	return nil
@@ -137,6 +138,7 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 
 		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
 		if err != nil {
+			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
 		}
 		defer response.Body.Close()
@@ -153,7 +155,8 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 			return err
 		}
 
-		_, err = SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+		defer response.Body.Close()
 		if err != nil {
 			log.Println("Error in SendMetricsJSON from SendRequest", err)
 			return err

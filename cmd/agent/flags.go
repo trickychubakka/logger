@@ -18,12 +18,14 @@ type Config struct {
 	logfile        string
 }
 
-func IsValidIp(ip string) bool {
+// IsValidIP функция для проверки на то, что строка является валидным ip адресом
+func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
-	if res == nil {
-		return false
-	}
-	return true
+	return res != nil
+	//if res == nil {
+	//	return false
+	//}
+	//return true
 }
 
 // initConfig функция инициализации конфигурации агента с использованием параметров командной строки
@@ -38,7 +40,7 @@ func initConfig(conf *Config) error {
 
 	// Парсинг параметров командной строки
 	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
-	if !flagTest {
+	if !FlagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port to run server")
 		flag.StringVar(&ReportIntervalFlag, "r", "10", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "2", "agent poll interval")
@@ -54,7 +56,7 @@ func initConfig(conf *Config) error {
 	}
 
 	// Проверка на то, что заданный адрес является валидным IP или URI
-	if IsValidIp(strings.Split(AddressFlag, ":")[0]) {
+	if IsValidIP(strings.Split(AddressFlag, ":")[0]) {
 		log.Println("AddressFlag is IP address, Using IP:", AddressFlag)
 	} else if _, err := url.ParseRequestURI(AddressFlag); err != nil {
 		return err
