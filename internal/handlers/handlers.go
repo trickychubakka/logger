@@ -1,9 +1,13 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
+	"log"
 	"logger/internal/storage/memstorage"
 	"net/http"
 	"strconv"
@@ -20,6 +24,13 @@ const (
 	metricValue = 3
 )
 
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
+
 // urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
 func urlToMap(url string) ([]string, error) {
 	splittedURL := strings.Split(strings.Trim(url, "/"), "/")
@@ -29,59 +40,16 @@ func urlToMap(url string) ([]string, error) {
 	}
 	// Если длина разобранного URL больше 4 -- в URL что-то лишнее
 	if len(splittedURL) > 4 {
-		fmt.Println("Error in urlToMap: URL is too long")
+		log.Println("Error in urlToMap: URL is too long")
 		return splittedURL, errors.New("URL is too long")
 	}
 	//fmt.Println("urlToMap:", splittedURL)
 	return splittedURL, nil
 }
 
-//// MetricHandler handler обработки запросов
-//func MetricHandler(w http.ResponseWriter, r *http.Request) {
-//	fmt.Println("Request Header is:", r.Header)
-//	splittedURL, err := urlToMap(r.URL.String())
-//	if err != nil {
-//		fmt.Println("ERROR:", err)
-//		w.WriteHeader(http.StatusNotFound)
-//		return
-//	}
-//	// metricHandler Обработка gauge метрики
-//	if splittedURL[metricType] == "gauge" {
-//		if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
-//			if err := store.UpdateGauge(splittedURL[metricName], val); err != nil {
-//				w.WriteHeader(http.StatusInternalServerError)
-//				return
-//			}
-//		} else {
-//			fmt.Println("ERROR: There is no metric or wrong metric value type -- must be float64")
-//			w.WriteHeader(http.StatusBadRequest)
-//			return
-//		}
-//		// metricHandler Обработка counter метрик
-//	} else if splittedURL[metricType] == "counter" {
-//		if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
-//			if err := store.UpdateCounter(splittedURL[metricName], val); err != nil {
-//				w.WriteHeader(http.StatusInternalServerError)
-//				return
-//			}
-//		} else {
-//			fmt.Println("ERROR: There is no metric or wrong metric value type -- must be int64")
-//			w.WriteHeader(http.StatusBadRequest)
-//			return
-//		}
-//		// Неправильный тип метрики
-//	} else {
-//		fmt.Println("ERROR: Wrong metric type")
-//		w.WriteHeader(http.StatusBadRequest)
-//		return
-//	}
-//	// Формируем ответ
-//	w.Header().Set("content-type", "text/plain; charset=utf-8")
-//	w.WriteHeader(http.StatusOK)
-//	fmt.Println(store)
-//}
+//func urlToMetric(url string) (Metric, error) {}
 
-// MetricsHandler -- Gin handler обработки запросов
+// MetricsHandler -- Gin handler обработки запросов по изменениям метрик через URL
 func MetricsHandler(c *gin.Context) {
 	//fmt.Println("Request Header is:", c.Header)
 	splittedURL, err := urlToMap(c.Request.URL.String())
@@ -97,7 +65,7 @@ func MetricsHandler(c *gin.Context) {
 				return
 			}
 		} else {
-			fmt.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be float64")
+			log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be float64")
 			c.Status(http.StatusBadRequest)
 			return
 		}
@@ -109,20 +77,74 @@ func MetricsHandler(c *gin.Context) {
 				return
 			}
 		} else {
-			fmt.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be int64")
+			log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be int64")
 			c.Status(http.StatusBadRequest)
 			return
 		}
 		// Неправильный тип метрики
 	} else {
-		fmt.Println("Error in MetricHandler: Wrong metric type")
+		log.Println("Error in MetricHandler: Wrong metric type")
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	log.Println("Requested PLAIN metric UPDATE with next metric")
 	// Формируем ответ
 	c.Header("content-type", "text/plain; charset=utf-8")
 	c.Status(http.StatusOK)
 	//fmt.Println(store)
+}
+
+// MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body
+func MetricHandlerJSON(c *gin.Context) {
+	jsn, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+		return
+	}
+
+	var tmpMetric Metrics
+
+	err = json.Unmarshal(jsn, &tmpMetric)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	// TODO логирование запроса
+	log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
+
+	if tmpMetric.MType == "gauge" {
+		if err := store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	} else if tmpMetric.MType == "counter" {
+		if err := store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
+		if *tmpMetric.Delta, err = store.GetCounter(tmpMetric.ID); err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		log.Println("Error in MetricHandlerJSON: Wrong metric type")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	j2 := io.NopCloser(bytes.NewBuffer(jsn))
+	log.Println("Request from j2:", j2)
+
+	resp, err := json.Marshal(tmpMetric)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Header("content-type", "Content-Type: application/json")
+	c.Status(http.StatusOK)
+	c.Writer.Write(resp)
 }
 
 // GetAllMetrics получить все метрики
@@ -160,14 +182,56 @@ func GetMetric(c *gin.Context) {
 		switch v := val.(type) {
 		case float64:
 			{
-				//fmt.Println(fmt.Sprintf("%g", val.(float64)))
-				//c.String(http.StatusOK, fmt.Sprintf("%g", val.(float64)))
 				c.String(http.StatusOK, fmt.Sprintf("%g", v))
 			}
 		case int64:
-			//c.String(http.StatusOK, fmt.Sprintf("%d", val.(int64)))
 			c.String(http.StatusOK, fmt.Sprintf("%d", v))
 		}
 	}
+}
 
+// GetMetricJSON получить значение метрики через JSON
+func GetMetricJSON(c *gin.Context) {
+	jsn, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+		return
+	}
+
+	var tmpMetric Metrics
+
+	err = json.Unmarshal(jsn, &tmpMetric)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	if tmpMetric.MType == "gauge" {
+		var val float64
+		val, err = store.GetGauge(tmpMetric.ID)
+		tmpMetric.Value = &val
+	}
+	if tmpMetric.MType == "counter" {
+		var delta int64
+		delta, err = store.GetCounter(tmpMetric.ID)
+		tmpMetric.Delta = &delta
+	}
+	if err != nil {
+		log.Println("Requested metric value with status 404", tmpMetric)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
+	resp, err := json.Marshal(tmpMetric)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	log.Println("Requested metric value with status 200", tmpMetric)
+	j2 := io.NopCloser(bytes.NewBuffer(resp))
+	log.Println("Request value from j2:", j2)
+
+	c.Header("content-type", "Content-Type: application/json")
+	c.Status(http.StatusOK)
+	c.Writer.Write(resp)
 }

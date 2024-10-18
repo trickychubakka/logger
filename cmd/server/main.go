@@ -4,6 +4,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"log"
 	"logger/internal/handlers"
 	"logger/internal/logging"
 )
@@ -29,22 +30,30 @@ func main() {
 	sugar = *logger.Sugar()
 
 	if err := initConfig(&conf); err != nil {
+		log.Println("Panic in initConfig")
 		panic(err)
 	}
-
+	sugar.Infow("initConfig sugar logging", "conf", conf)
 	//gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
 	router.Use(logging.WithLogging(&sugar))
-	//router.GET("/", logging.WithLogging(handlers.GetAllMetrics, &sugar))
 	router.GET("/", handlers.GetAllMetrics)
-	//router.POST("/update/:metricType/:metricName/:metricValue", logging.WithLogging(handlers.MetricsHandler, &sugar))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)
-	//router.GET("/value/:metricType/:metricName", logging.WithLogging(handlers.GetMetric, &sugar))
+	router.POST("/update", handlers.MetricHandlerJSON)
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric)
+	router.POST("/value", handlers.GetMetricJSON)
 
 	err = router.Run(conf.runAddr)
 	if err != nil {
 		panic(err)
 	}
+
+	//log.Println("conf.runAddr is:", conf.runAddr)
+	//server := &http.Server{Handler: router}
+	//l, err := net.Listen("tcp4", conf.runAddr)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//err = server.Serve(l)
 }

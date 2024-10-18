@@ -3,16 +3,27 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
+	"log"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
 	pollInterval   int
 	reportInterval int
 	address        string
+	logfile        string
+}
+
+func Is_valid_ip(ip string) bool {
+	res := net.ParseIP(ip)
+	if res == nil {
+		return false
+	}
+	return true
 }
 
 // initConfig функция инициализации конфигурации агента с использованием параметров командной строки
@@ -22,28 +33,37 @@ func initConfig(conf *Config) error {
 		ReportIntervalFlag string
 		PollIntervalFlag   string
 		AddressFlag        string
+		LogFileFlag        string
 	)
 
+	// Парсинг параметров командной строки
+	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
 	if !flagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port to run server")
 		flag.StringVar(&ReportIntervalFlag, "r", "10", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "2", "agent poll interval")
+		// Для логирования агента в лог файл необходимо определеить флаг -l
+		flag.StringVar(&LogFileFlag, "l", "", "agent log file")
 
 		flag.Parse()
 	}
 	// address processing
 	if envAddressFlag := os.Getenv("ADDRESS"); envAddressFlag != "" {
-		fmt.Println("env var ADDRESS was specified, use ADDRESS =", envAddressFlag)
+		log.Println("env var ADDRESS was specified, use ADDRESS =", envAddressFlag)
 		AddressFlag = envAddressFlag
 	}
-	if _, err := url.ParseRequestURI(AddressFlag); err != nil {
+
+	// Проверка на то, что заданный адрес является валидным IP или URI
+	if Is_valid_ip(strings.Split(AddressFlag, ":")[0]) {
+		log.Println("AddressFlag is IP address, Using IP:", AddressFlag)
+	} else if _, err := url.ParseRequestURI(AddressFlag); err != nil {
 		return err
 	}
 	conf.address = AddressFlag
 
 	// reportInterval processing
 	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
-		fmt.Println("env var REPORT_INTERVAL was specified, use REPORT_INTERVAL =", envReportInterval)
+		log.Println("env var REPORT_INTERVAL was specified, use REPORT_INTERVAL =", envReportInterval)
 		ReportIntervalFlag = envReportInterval
 	}
 
@@ -55,7 +75,7 @@ func initConfig(conf *Config) error {
 
 	// PollInterval processing
 	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
-		fmt.Println("env var POLL_INTERVAL was specified, use POLL_INTERVAL =", envPollInterval)
+		log.Println("env var POLL_INTERVAL was specified, use POLL_INTERVAL =", envPollInterval)
 		PollIntervalFlag = envPollInterval
 	}
 
@@ -70,6 +90,15 @@ func initConfig(conf *Config) error {
 		return errors.New("poll interval must be less than report interval")
 	}
 
-	fmt.Printf("Address is %s, PollInterval is %d, ReportInterval is %d", conf.address, conf.pollInterval, conf.reportInterval)
+	// LogFile processing
+	// Для логирования агента в лог файл необходимо определеить переменную окружения AGENT_LOG
+	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
+	if envLogFileFlag := os.Getenv("AGENT_LOG"); envLogFileFlag != "" {
+		log.Println("env var AGENT_LOG was specified, use AGENT_LOG =", envLogFileFlag)
+		LogFileFlag = envLogFileFlag
+	}
+	conf.logfile = LogFileFlag
+
+	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.address, conf.pollInterval, conf.reportInterval, conf.logfile)
 	return nil
 }
