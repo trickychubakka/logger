@@ -89,6 +89,7 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL)
 
 		response, err := SendRequest(client, reqURL, nil, "text/plain")
+		defer response.Body.Close()
 
 		if err != nil {
 			return err
@@ -103,6 +104,7 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL)
 
 		response, err := SendRequest(client, reqURL, nil, "text/plain")
+		defer response.Body.Close()
 		if err != nil {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
@@ -132,7 +134,12 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 		if err != nil {
 			return err
 		}
-		_, err = SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+
+		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
 	}
 
 	// Цикл для отсылки метрик типа counterMap

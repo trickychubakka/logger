@@ -46,9 +46,9 @@ func main() {
 		defer file.Close()
 	}
 
-	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s", conf.address, conf.pollInterval, conf.reportInterval, conf.logfile)
+	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.address, conf.pollInterval, conf.reportInterval, conf.logfile)
 
-	myMetrics := internal.NewMetricsObj()
+	myMetrics := internal.NewMetricsStorageObj()
 
 	defer func() {
 		if p := recover(); p != nil {
