@@ -44,7 +44,7 @@ func Test_initConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		// Включение режима тестирования для отключения парсинга параметров командной строки
-		flagTest = true
+		FlagTest = true
 
 		t.Run(tt.name, func(t *testing.T) {
 			if err := setEnv(tt.args.envAddr); err != nil {
