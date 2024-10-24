@@ -79,14 +79,14 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
 	//req, err := http.NewRequest(http.MethodPost, url, bb)
 	//req.Close = true //???
+	if err != nil {
+		log.Println("SendRequest. Panic creating request:", err)
+		panic(err)
+	}
 	defer req.Body.Close()
 
 	//req, err := http.NewRequest(http.MethodPost, url, body) // без gzip
 	req.Close = true
-	if err != nil {
-		log.Println("Panic in SendRequest(): ", err)
-		panic(err)
-	}
 
 	req.Header.Set("Content-Type", contentType)
 	// gzip
