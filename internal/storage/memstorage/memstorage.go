@@ -30,6 +30,7 @@ func (ms *MemStorage) UpdateCounter(key string, value int64) error {
 
 func (ms *MemStorage) GetGauge(key string) (float64, error) {
 	val, ok := ms.gaugeMap[key]
+	//log.Println("GetGauge key:", key, "val:", val, "ok:", ok)
 	if !ok {
 		return 0, errors.New("no value for key " + key)
 	}

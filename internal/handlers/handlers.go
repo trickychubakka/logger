@@ -89,13 +89,15 @@ func MetricsHandler(c *gin.Context) {
 	}
 	log.Println("Requested PLAIN metric UPDATE with next metric")
 	// Формируем ответ
-	c.Header("content-type", "text/plain; charset=utf-8")
+	//c.Header("content-type", "text/plain; charset=utf-8")
+	c.Header("content-type", "text/html; charset=utf-8")
 	c.Status(http.StatusOK)
 	//fmt.Println(store)
 }
 
 // MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body
 func MetricHandlerJSON(c *gin.Context) {
+	log.Println("We are in MetricHandlerJSON")
 	jsn, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
@@ -106,6 +108,7 @@ func MetricHandlerJSON(c *gin.Context) {
 
 	err = json.Unmarshal(jsn, &tmpMetric)
 	if err != nil {
+		log.Println("Error in json body read 2", err, "jsn is:", string(jsn))
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -115,16 +118,19 @@ func MetricHandlerJSON(c *gin.Context) {
 
 	if tmpMetric.MType == "gauge" {
 		if err := store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
+			log.Println("Error in UpdateGauge:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 	} else if tmpMetric.MType == "counter" {
 		if err := store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
+			log.Println("Error in UpdateCounter:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 		// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
 		if *tmpMetric.Delta, err = store.GetCounter(tmpMetric.ID); err != nil {
+			log.Println("Error in GetCounter:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
@@ -138,13 +144,17 @@ func MetricHandlerJSON(c *gin.Context) {
 	log.Println("Request from j2:", j2)
 
 	resp, err := json.Marshal(tmpMetric)
+	log.Println("MetricHandler after json.Marshal, response is ", resp)
+	log.Println("MetricHandler after json.Marshal, string response is ", string(resp))
 	if err != nil {
+		log.Println("Error in json.Marshal in handlers:", err)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	c.Header("content-type", "Content-Type: application/json")
+	c.Header("content-type", "application/json")
 	c.Status(http.StatusOK)
 	c.Writer.Write(resp)
+	//c.Writer.WriteString(string(resp))
 }
 
 // GetAllMetrics получить все метрики
@@ -154,6 +164,7 @@ func GetAllMetrics(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	} else {
+		c.Header("content-type", "text/html; charset=utf-8")
 		c.String(http.StatusOK, "Gauge metrics:")
 		c.IndentedJSON(http.StatusOK, metrics)
 	}
@@ -162,6 +173,7 @@ func GetAllMetrics(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	} else {
+		c.Header("content-type", "text/html; charset=utf-8")
 		c.String(http.StatusOK, "\nCounter metrics:")
 		c.IndentedJSON(http.StatusOK, metrics)
 	}
@@ -193,6 +205,7 @@ func GetMetric(c *gin.Context) {
 // GetMetricJSON получить значение метрики через JSON
 func GetMetricJSON(c *gin.Context) {
 	jsn, err := io.ReadAll(c.Request.Body)
+	log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
 	if err != nil {
 		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
 		return
@@ -218,6 +231,7 @@ func GetMetricJSON(c *gin.Context) {
 	}
 	if err != nil {
 		log.Println("Requested metric value with status 404", tmpMetric)
+		//log.Println("error is", err)
 		c.Status(http.StatusNotFound)
 		return
 	}
@@ -231,7 +245,7 @@ func GetMetricJSON(c *gin.Context) {
 	j2 := io.NopCloser(bytes.NewBuffer(resp))
 	log.Println("Request value from j2:", j2)
 
-	c.Header("content-type", "Content-Type: application/json")
+	c.Header("content-type", "application/json")
 	c.Status(http.StatusOK)
 	c.Writer.Write(resp)
 }

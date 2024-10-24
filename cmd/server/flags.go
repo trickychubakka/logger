@@ -13,6 +13,7 @@ import (
 
 type Config struct {
 	runAddr string
+	logfile string
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -31,6 +32,7 @@ func initConfig(conf *Config) error {
 
 	if !FlagTest {
 		flag.StringVar(&conf.runAddr, "a", "localhost:8080", "address and port to run server")
+		flag.StringVar(&conf.logfile, "l", "", "server log file")
 		flag.Parse()
 	}
 
@@ -55,6 +57,7 @@ func initConfig(conf *Config) error {
 	// Если часть URI является валидным IP
 	if IsValidIP(ipPort[0]) {
 		log.Println("conf.runAddr is IP address, Using IP:", conf.runAddr)
+		//sugar.Infoln("conf.runAddr is IP address, Using IP:", conf.runAddr)
 		return nil
 	}
 	// Если адрес не является валидным URI -- возвращаем ошибку
@@ -63,6 +66,14 @@ func initConfig(conf *Config) error {
 		return fmt.Errorf("invalid ADDRESS variable `%s`", conf.runAddr)
 		//return err
 	}
+
+	if envLogFileFlag := os.Getenv("SERVER_LOG"); envLogFileFlag != "" {
+		log.Println("env var SERVER_LOG was specified, use SERVER_LOG =", envLogFileFlag)
+		conf.logfile = envLogFileFlag
+		log.Println("Using env var SERVER_LOG=", envLogFileFlag)
+	}
+	//conf.logfile = LogFileFlag
+
 	log.Println("conf.runAddr is URI address, Using URI:", conf.runAddr)
 	return nil
 }

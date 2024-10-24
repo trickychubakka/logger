@@ -42,8 +42,8 @@ func initConfig(conf *Config) error {
 	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
 	if !FlagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port to run server")
-		flag.StringVar(&ReportIntervalFlag, "r", "10", "agent report interval")
-		flag.StringVar(&PollIntervalFlag, "p", "2", "agent poll interval")
+		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
+		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определеить флаг -l
 		flag.StringVar(&LogFileFlag, "l", "", "agent log file")
 
