@@ -15,10 +15,7 @@ var FlagTest = false
 
 // run функция выполнения цикла поллинга метрик
 func run(myMetrics internal.MetricsStorage) {
-	//_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
-	//if err != nil {
-	//	log.Println(err)
-	//}
+
 	firstRun := true
 	for {
 		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
@@ -30,13 +27,13 @@ func run(myMetrics internal.MetricsStorage) {
 		}
 
 		if firstRun {
-			firstRun = false
 			log.Println("first run. Starting PingServer")
 			_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
 			if err != nil {
 				log.Println(err)
 			}
 		}
+		firstRun = false
 
 		if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
 			//if err := internal.SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
@@ -47,7 +44,6 @@ func run(myMetrics internal.MetricsStorage) {
 }
 
 func main() {
-	//internal.InitHTTPClient()
 
 	if err := initConfig(&conf); err != nil {
 		log.Println("AGENT Panic from initConfig", err)

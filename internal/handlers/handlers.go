@@ -51,7 +51,6 @@ func urlToMap(url string) ([]string, error) {
 
 // MetricsHandler -- Gin handler обработки запросов по изменениям метрик через URL
 func MetricsHandler(c *gin.Context) {
-	//fmt.Println("Request Header is:", c.Header)
 	splittedURL, err := urlToMap(c.Request.URL.String())
 	if err != nil {
 		c.Status(http.StatusNotFound)
@@ -89,15 +88,13 @@ func MetricsHandler(c *gin.Context) {
 	}
 	log.Println("Requested PLAIN metric UPDATE with next metric")
 	// Формируем ответ
-	//c.Header("content-type", "text/plain; charset=utf-8")
 	c.Header("content-type", "text/html; charset=utf-8")
 	c.Status(http.StatusOK)
-	//fmt.Println(store)
 }
 
 // MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body
 func MetricHandlerJSON(c *gin.Context) {
-	log.Println("We are in MetricHandlerJSON")
+	//log.Println("We are in MetricHandlerJSON")
 	jsn, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
@@ -144,8 +141,8 @@ func MetricHandlerJSON(c *gin.Context) {
 	log.Println("Request from j2:", j2)
 
 	resp, err := json.Marshal(tmpMetric)
-	log.Println("MetricHandler after json.Marshal, response is ", resp)
-	log.Println("MetricHandler after json.Marshal, string response is ", string(resp))
+	//log.Println("MetricHandler after json.Marshal, response is ", resp)
+	//log.Println("MetricHandler after json.Marshal, string response is ", string(resp))
 	if err != nil {
 		log.Println("Error in json.Marshal in handlers:", err)
 		c.Status(http.StatusInternalServerError)
@@ -154,7 +151,6 @@ func MetricHandlerJSON(c *gin.Context) {
 	c.Header("content-type", "application/json")
 	c.Status(http.StatusOK)
 	c.Writer.Write(resp)
-	//c.Writer.WriteString(string(resp))
 }
 
 // GetAllMetrics получить все метрики

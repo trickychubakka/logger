@@ -72,7 +72,6 @@ func initConfig(conf *Config) error {
 		conf.logfile = envLogFileFlag
 		log.Println("Using env var SERVER_LOG=", envLogFileFlag)
 	}
-	//conf.logfile = LogFileFlag
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.runAddr)
 	return nil

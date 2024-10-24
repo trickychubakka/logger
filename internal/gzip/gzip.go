@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"time"
 )
 
 const (
@@ -41,12 +40,10 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 func GzipResponseHandle(level int) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// read
-		t1 := time.Now()
 		if !shouldCompress(c.Request) {
 			// если gzip не поддерживается, передаём управление
 			// дальше без изменений
 			c.Next()
-			//time.Sleep(500 * time.Millisecond)
 			return
 		}
 		//// создаём gzip.Writer поверх текущего c.Writer
@@ -63,7 +60,6 @@ func GzipResponseHandle(level int) gin.HandlerFunc {
 			gz.Close()
 		}()
 		c.Next()
-		log.Println("********TIMING of GzipResponseHandle is:***************", time.Now().Sub(t1))
 	}
 }
 
@@ -77,13 +73,11 @@ func shouldCompress(req *http.Request) bool {
 	if contentTypeToCompressMap[req.Header.Get("content-type")] {
 		log.Println("gzip compression for Content-Type", req.Header.Get("content-type"), "enabled")
 		return true
-		//return false
 	}
 
 	if contentTypeToCompressMap[req.Header.Get("Accept")] {
 		log.Println("gzip compression for Content-Type", req.Header.Get("content-type"), "enabled")
 		return true
-		//return false
 	}
 
 	log.Println("Default - do not encode. Content-Type is", req.Header.Get("Content-Type"))
@@ -94,7 +88,6 @@ func GzipRequestHandle(c *gin.Context) {
 	if c.Request.Header.Get(`Content-Encoding`) == `gzip` {
 		log.Println("gzip decompression")
 		gz, err := gzip.NewReader(c.Request.Body)
-		//log.Println("gz is:", gz, "error is:", err)
 		if err != nil {
 			log.Println("Error in GzipRequestHandle:", err)
 			c.Status(http.StatusInternalServerError)
@@ -102,7 +95,6 @@ func GzipRequestHandle(c *gin.Context) {
 		}
 		defer gz.Close()
 		c.Request.Body = gz
-		//log.Println("c.Request.Body from GzipRequestHandle:", c.Request.Body)
 		c.Next()
 	}
 }

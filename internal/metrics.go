@@ -20,14 +20,6 @@ type MetricsStorage struct {
 
 var client = &http.Client{}
 
-//func InitHTTPClient() {
-//	tr := &http.Transport{
-//		MaxIdleConnsPerHost: 1024,
-//		TLSHandshakeTimeout: 0 * time.Second,
-//	}
-//	client = &http.Client{Transport: tr}
-//}
-
 func NewMetricsStorageObj() MetricsStorage {
 	return MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -64,9 +56,9 @@ func MetricsPolling(metrics *MetricsStorage) error {
 
 func SendRequest(client *http.Client, url string, body io.Reader, contentType string) (*http.Response, error) {
 	//func SendRequest(url string, body io.Reader, contentType string) (*http.Response, error) {
-	log.Println("body is:", body)
+	//log.Println("body is:", body)
 	b, err := io.ReadAll(body)
-	log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
+	//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
 
 	var buf bytes.Buffer
 	zb := gzip.NewWriter(&buf)
@@ -74,13 +66,11 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	_, err = zb.Write(b)
 	err = zb.Close()
 
-	bb := bytes.NewReader(buf.Bytes())
-	//err = zb.Close() NO!!!
-	//
-	log.Println("bb before NewRequest is:", bb)
+	//bb := bytes.NewReader(buf.Bytes())
+	//log.Println("bb before NewRequest is:", bb)
 
-	//req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
-	req, err := http.NewRequest(http.MethodPost, url, bb)
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
+	//req, err := http.NewRequest(http.MethodPost, url, bb)
 	//req.Close = true //???
 	defer req.Body.Close()
 
@@ -100,8 +90,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 
 	response, err := client.Do(req)
-	//io.Copy(io.Discard, response.Body) //
-	//if response, err := client.Do(req); response != nil {
+
 	if response != nil {
 		log.Println("response is:", response)
 		defer response.Body.Close()
@@ -109,10 +98,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		log.Println("WARNING!!!!!", err, "; response is", response)
 		panic(err)
 	}
-
-	//defer response.Body.Close()
-
-	//log.Println("Header is:", response.Header)
 
 	return response, nil
 }
