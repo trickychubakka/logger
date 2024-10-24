@@ -40,7 +40,7 @@ func TestMetricHandler(t *testing.T) {
 			},
 			want: want{
 				code:        http.StatusOK,
-				contentType: "text/plain; charset=utf-8",
+				contentType: "text/html; charset=utf-8",
 			},
 		},
 		{
