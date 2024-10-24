@@ -28,7 +28,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    Config{"localhost:8080"},
+				conf:    Config{"localhost:8080", ""},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,
@@ -36,7 +36,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:    Config{"localhost:8080"},
+				conf:    Config{"localhost:8080", ""},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,

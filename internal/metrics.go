@@ -58,13 +58,20 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	//func SendRequest(url string, body io.Reader, contentType string) (*http.Response, error) {
 	//log.Println("body is:", body)
 	b, err := io.ReadAll(body)
+	if err != nil {
+		log.Println("SendRequest. Error reading body:", err)
+		return nil, err
+	}
 	//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
 
 	var buf bytes.Buffer
 	zb := gzip.NewWriter(&buf)
 
-	_, err = zb.Write(b)
+	zb.Write(b)
 	err = zb.Close()
+	if err != nil {
+		log.Println("SendRequest. Error closing gzip writer:", err)
+	}
 
 	//bb := bytes.NewReader(buf.Bytes())
 	//log.Println("bb before NewRequest is:", bb)
@@ -313,7 +320,7 @@ func PingServer(url string, contentType string) (*http.Response, error) {
 	log.Println("PING SERVER with url", url)
 	var tmpVar int64
 	var tmpMetric = Metrics{"Ping", "counter", &tmpVar, nil}
-	payload, err := json.Marshal(tmpMetric)
+	payload, _ := json.Marshal(tmpMetric)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload)) // без gzip
 	if err != nil {
@@ -324,6 +331,9 @@ func PingServer(url string, contentType string) (*http.Response, error) {
 	req.Header.Set("Content-Type", contentType)
 
 	response, err := client.Do(req)
+	if err != nil {
+		log.Println("PingServer. client.Do error: ", err)
+	}
 	log.Println("response in PingServer is:", response)
 	defer response.Body.Close()
 	return response, err
