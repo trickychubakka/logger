@@ -66,7 +66,6 @@ func TestSendMetrics(t *testing.T) {
 		counterMap: make(map[string]int64),
 	}
 	metrics.gaugeMap["metric1"] = 1
-	//metrics.counterMap["metric2"] = 2
 
 	tests := []struct {
 		name    string

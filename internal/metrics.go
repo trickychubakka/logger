@@ -57,33 +57,41 @@ func MetricsPolling(metrics *MetricsStorage) error {
 func SendRequest(client *http.Client, url string, body io.Reader, contentType string) (*http.Response, error) {
 	//func SendRequest(url string, body io.Reader, contentType string) (*http.Response, error) {
 	//log.Println("body is:", body)
-	b, err := io.ReadAll(body)
-	if err != nil {
-		log.Println("SendRequest. Error reading body:", err)
-		return nil, err
+	//var bb io.Reader
+
+	if body != nil {
+
+		b, err := io.ReadAll(body)
+		if err != nil {
+			log.Println("SendRequest. Error reading body:", err)
+			return nil, err
+		}
+		//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
+
+		var buf bytes.Buffer
+		zb := gzip.NewWriter(&buf)
+
+		if _, err := zb.Write(b); err != nil {
+			log.Println("SendRequest. Error gzipping body:", err)
+			return nil, err
+		}
+
+		err = zb.Close()
+		if err != nil {
+			log.Println("SendRequest. Error closing gzip writer:", err)
+		}
+		body = bytes.NewReader(buf.Bytes())
 	}
-	//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
 
-	var buf bytes.Buffer
-	zb := gzip.NewWriter(&buf)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 
-	zb.Write(b)
-	err = zb.Close()
-	if err != nil {
-		log.Println("SendRequest. Error closing gzip writer:", err)
-	}
-
-	//bb := bytes.NewReader(buf.Bytes())
-	//log.Println("bb before NewRequest is:", bb)
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
-	//req, err := http.NewRequest(http.MethodPost, url, bb)
-	//req.Close = true //???
 	if err != nil {
 		log.Println("SendRequest. Panic creating request:", err)
 		panic(err)
 	}
-	defer req.Body.Close()
+	if body != nil {
+		defer req.Body.Close()
+	}
 
 	//req, err := http.NewRequest(http.MethodPost, url, body) // без gzip
 	req.Close = true
