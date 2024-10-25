@@ -12,15 +12,14 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
-	"logger/cmd/server/initconfig"
+	"logger/cmd/server/initconf"
 	"logger/internal"
-	"logger/internal/storage/memstorage"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-var Store = memstorage.New()
+//var Store = memstorage.New()
 
 // Константа для кодирования смысла полей после парсинга URL на основе их порядкового номера
 // Пример: localhost:8080/update/gauge/metric2/777.4
@@ -65,7 +64,7 @@ func MetricsHandler(c *gin.Context) {
 	// metricHandler Обработка gauge метрики
 	if splittedURL[metricType] == "gauge" {
 		if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
-			if err := Store.UpdateGauge(splittedURL[metricName], val); err != nil {
+			if err := initconf.Store.UpdateGauge(splittedURL[metricName], val); err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
 			}
@@ -77,7 +76,7 @@ func MetricsHandler(c *gin.Context) {
 		// metricHandler Обработка counter метрик
 	} else if splittedURL[metricType] == "counter" {
 		if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
-			if err := Store.UpdateCounter(splittedURL[metricName], val); err != nil {
+			if err := initconf.Store.UpdateCounter(splittedURL[metricName], val); err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
 			}
@@ -120,19 +119,19 @@ func MetricHandlerJSON(c *gin.Context) {
 	log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
 
 	if tmpMetric.MType == "gauge" {
-		if err := Store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
+		if err := initconf.Store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
 			log.Println("Error in UpdateGauge:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 	} else if tmpMetric.MType == "counter" {
-		if err := Store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
+		if err := initconf.Store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
 			log.Println("Error in UpdateCounter:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 		// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
-		if *tmpMetric.Delta, err = Store.GetCounter(tmpMetric.ID); err != nil {
+		if *tmpMetric.Delta, err = initconf.Store.GetCounter(tmpMetric.ID); err != nil {
 			log.Println("Error in GetCounter:", err)
 			c.Status(http.StatusInternalServerError)
 			return
@@ -161,10 +160,10 @@ func MetricHandlerJSON(c *gin.Context) {
 		log.Println("GetMetric Writer.Write error:", err)
 	}
 
-	log.Println("Initconfig before Save is:", initconfig.Conf)
-	log.Println("start SAVE metrics dump to file: ", initconfig.Conf.FileStoragePath, "Store is:", Store)
+	log.Println("Initconfig before Save is:", initconf.Conf)
+	log.Println("start SAVE metrics dump to file: ", initconf.Conf.FileStoragePath, "Store is:", initconf.Store)
 
-	//if err := internal.Save(&Store, initconfig.Conf.FileStoragePath); err != nil {
+	//if err := internal.Save(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
 	//	log.Println("Error in internal.Save:", err)
 	//}
 
@@ -173,7 +172,7 @@ func MetricHandlerJSON(c *gin.Context) {
 // GetAllMetrics получить все метрики
 func GetAllMetrics(c *gin.Context) {
 	// Get all Gauge metrics
-	if metrics, err := Store.GetAllGaugesMap(); err != nil {
+	if metrics, err := initconf.Store.GetAllGaugesMap(); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	} else {
@@ -182,7 +181,7 @@ func GetAllMetrics(c *gin.Context) {
 		c.IndentedJSON(http.StatusOK, metrics)
 	}
 	// Get all Counter metrics
-	if metrics, err := Store.GetAllCountersMap(); err != nil {
+	if metrics, err := initconf.Store.GetAllCountersMap(); err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	} else {
@@ -199,7 +198,7 @@ func GetMetric(c *gin.Context) {
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 	}
-	val, err := Store.GetValue(splittedURL[metricType], splittedURL[metricName])
+	val, err := initconf.Store.GetValue(splittedURL[metricType], splittedURL[metricName])
 	if err != nil {
 		fmt.Println("Error in GetMetric:", err)
 		c.Status(http.StatusNotFound)
@@ -234,12 +233,12 @@ func GetMetricJSON(c *gin.Context) {
 
 	if tmpMetric.MType == "gauge" {
 		var val float64
-		val, err = Store.GetGauge(tmpMetric.ID)
+		val, err = initconf.Store.GetGauge(tmpMetric.ID)
 		tmpMetric.Value = &val
 	}
 	if tmpMetric.MType == "counter" {
 		var delta int64
-		delta, err = Store.GetCounter(tmpMetric.ID)
+		delta, err = initconf.Store.GetCounter(tmpMetric.ID)
 		tmpMetric.Delta = &delta
 	}
 	if err != nil {
@@ -265,14 +264,14 @@ func GetMetricJSON(c *gin.Context) {
 	}
 }
 
-func SyncDumpUpdate() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-		log.Println("SyncDumpUpdate toreMetricInterval :", initconfig.Conf.StoreMetricInterval)
-		if initconfig.Conf.StoreMetricInterval == 0 {
-			log.Println("sync flush metric into dump")
-			internal.Save(&Store, initconfig.Conf.FileStoragePath)
-		}
-		//c.Next()
-	}
-}
+//func SyncDumpUpdate() gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//		c.Next()
+//		log.Println("SyncDumpUpdate toreMetricInterval :", initconf.Conf.initconf.StoreMetricInterval)
+//		if initconf.Conf.initconf.StoreMetricInterval == 0 {
+//			log.Println("sync flush metric into dump")
+//			internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
+//		}
+//		//c.Next()
+//	}
+//}

@@ -2,15 +2,16 @@ package internal
 
 import (
 	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"log"
-	"logger/cmd/server/initconfig"
+	"logger/cmd/server/initconf"
 	"logger/internal/storage/memstorage"
 	"os"
 )
 
 //var storageFile = memstorage.New()
 
-// Save сохраняет настройки в файле fname.
+// Save функция сохранения дампа метрик в файл.
 func Save(store *memstorage.MemStorage, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics()
@@ -18,23 +19,24 @@ func Save(store *memstorage.MemStorage, fname string) error {
 		log.Println("error store serialisation in Save", err)
 		return err
 	}
-	//log.Println("Store in Save:", metrics)
+
 	data, err := json.Marshal(metrics)
 	if err != nil {
 		log.Println("Save. Error marshalling store")
-		//return err
+		return err
 	}
-	//log.Println("data", data)
-	// сохраняем данные в файл
-	os.WriteFile(initconfig.Conf.FileStoragePath, data, 0666)
+
+	err = os.WriteFile(fname, data, 0666)
+	if err != nil {
+		log.Println("Save. Error os.WriteFile")
+		return err
+	}
 	return nil
 }
 
-// Load читает настройки из файла fname.
+// Load функция чтения дампа метрик из файла
 func Load(store *memstorage.MemStorage, fname string) error {
-	// прочитайте файл с помощью os.ReadFile
-	// десериализуйте данные используя json.Unmarshal
-	// ...
+
 	data, err := os.ReadFile(fname)
 	if err != nil {
 		print("Save. Error read store dump file", fname)
@@ -47,4 +49,20 @@ func Load(store *memstorage.MemStorage, fname string) error {
 	}
 	log.Println("storage from Load:", store)
 	return nil
+}
+
+// SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики
+// Для случая ключа STORE_INTERVAL = 0
+func SyncDumpUpdate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+		log.Println("SyncDumpUpdate StoreMetricInterval :", initconf.Conf.StoreMetricInterval)
+		if initconf.Conf.StoreMetricInterval == 0 {
+			log.Println("sync flush metric into dump")
+			if err := Save(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
+				log.Println("SyncDumpUpdate error:", err)
+			}
+		}
+		//c.Next()
+	}
 }

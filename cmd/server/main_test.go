@@ -1,7 +1,7 @@
 package main
 
 import (
-	"logger/cmd/server/initconfig"
+	"logger/cmd/server/initconf"
 	"os"
 	"testing"
 )
@@ -17,7 +17,7 @@ func setEnv(envAddr string) error {
 func Test_initConfig(t *testing.T) {
 
 	type args struct {
-		conf                initconfig.Config
+		conf                initconf.Config
 		envAddr             string
 		StoreMetricInterval int
 		FileStoragePath     string
@@ -32,7 +32,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    initconfig.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
+				conf:    initconf.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,
@@ -40,7 +40,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:    initconfig.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
+				conf:    initconf.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,
@@ -48,14 +48,14 @@ func Test_initConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		// Включение режима тестирования для отключения парсинга параметров командной строки
-		initconfig.FlagTest = true
+		initconf.FlagTest = true
 
 		t.Run(tt.name, func(t *testing.T) {
 			if err := setEnv(tt.args.envAddr); err != nil {
 				panic(err)
 			}
 			//if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
-			if err := initconfig.InitConfig(&tt.args.conf); (err != nil) != tt.wantErr {
+			if err := initconf.InitConfig(&tt.args.conf); (err != nil) != tt.wantErr {
 				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

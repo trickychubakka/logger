@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
-	"logger/cmd/server/initconfig"
+	"logger/cmd/server/initconf"
 	mygzip "logger/internal/gzip"
 	"logger/internal/handlers"
 	"logger/internal/logging"
@@ -55,19 +55,16 @@ func task(ctx context.Context, interval int, store *memstorage.MemStorage) {
 
 		// выполняем нужный нам код
 		default:
-			println("Save metrics dump to file", initconfig.Conf.FileStoragePath, "with interval", interval, "s")
-			internal.Save(store, initconfig.Conf.FileStoragePath)
+			println("Save metrics dump to file", initconf.Conf.FileStoragePath, "with interval", interval, "s")
+			err := internal.Save(store, initconf.Conf.FileStoragePath)
+			if err != nil {
+				return
+			}
 		}
 		// делаем паузу перед следующей итерацией
 		time.Sleep(time.Duration(interval) * time.Second)
 	}
 }
-
-//func cleanup() {
-//	defer os.WriteFile("interrupt.dump", []byte("TEST!"), 0666)
-//	defer internal.Save(&handlers.Store, initconfig.Conf.FileStoragePath)
-//	log.Println("SERVER STOP!!!")
-//}
 
 var ctx context.Context
 var cancel context.CancelFunc
@@ -79,7 +76,10 @@ func main() {
 		<-c
 		//cleanup()
 		//os.WriteFile("interrupt.dump", []byte("TEST!"), 0666)
-		internal.Save(&handlers.Store, initconfig.Conf.FileStoragePath)
+		err := internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
+		if err != nil {
+			return
+		}
 		log.Println("SERVER STOPPED!!!")
 		os.Exit(1)
 	}()
@@ -94,33 +94,33 @@ func main() {
 	// делаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
 
-	if err := initconfig.InitConfig(&initconfig.Conf); err != nil {
+	if err := initconf.InitConfig(&initconf.Conf); err != nil {
 		log.Println("Panic in initConfig")
 		panic(err)
 	}
-	log.Println("initconfig is:", initconfig.Conf)
+	log.Println("initconf is:", initconf.Conf)
 
 	//defer os.WriteFile("interrupt.dump", []byte("TEST!"), 0666)
-	defer internal.Save(&handlers.Store, initconfig.Conf.FileStoragePath)
+	defer internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
 
-	if initconfig.Conf.Restore {
-		if err := internal.Load(&handlers.Store, initconfig.Conf.FileStoragePath); err != nil {
+	if initconf.Conf.Restore {
+		if err := internal.Load(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
 			log.Println("Error in initial dump load:", err)
 		}
 	}
 
-	if initconfig.Conf.StoreMetricInterval != 0 {
+	if initconf.Conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения
-		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconfig.Conf.StoreMetricInterval)
+		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
 		ctx, cancel = context.WithCancel(context.Background())
 		// запускаем горутину
-		go task(ctx, initconfig.Conf.StoreMetricInterval, &handlers.Store)
+		go task(ctx, initconf.Conf.StoreMetricInterval, &initconf.Store)
 	}
 
-	sugar.Infow("initConfig sugar logging", "conf", initconfig.Conf.RunAddr)
+	sugar.Infow("initConfig sugar logging", "conf", initconf.Conf.RunAddr)
 	//gin.SetMode(gin.ReleaseMode)
 
-	if initconfig.Conf.Logfile != "" {
+	if initconf.Conf.Logfile != "" {
 		file, err := os.OpenFile("server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal("Failed to open log file:", err)
@@ -137,22 +137,22 @@ func main() {
 	//custom gzip handlers
 	router.Use(mygzip.GzipRequestHandle)
 	//router.Use(mygzip.GzipResponseHandle(gzip.DefaultCompression))
-	router.Use(handlers.SyncDumpUpdate())
+	router.Use(internal.SyncDumpUpdate())
 	router.GET("/", handlers.GetAllMetrics)
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)
 	router.POST("/update", handlers.MetricHandlerJSON)
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric)
 	router.POST("/value", handlers.GetMetricJSON)
 
-	err = router.Run(initconfig.Conf.RunAddr)
+	err = router.Run(initconf.Conf.RunAddr)
 	if err != nil {
 		panic(err)
 	}
 
-	sugar.Infow("\nServer started on runAddr %s \n", initconfig.Conf.RunAddr)
+	sugar.Infow("\nServer started on runAddr %s \n", initconf.Conf.RunAddr)
 
 	// завершаем контекст, чтобы завершить горутину дампа метрик в файл
-	if initconfig.Conf.StoreMetricInterval != 0 {
+	if initconf.Conf.StoreMetricInterval != 0 {
 		cancel()
 	}
 

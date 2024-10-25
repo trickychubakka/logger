@@ -39,14 +39,13 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 
 func GzipResponseHandle(level int) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// read
+
 		if !shouldCompress(c.Request) {
-			// если gzip не поддерживается, передаём управление
-			// дальше без изменений
 			c.Next()
 			return
 		}
-		//// создаём gzip.Writer поверх текущего c.Writer
+
+		// создаём gzip.Writer поверх текущего c.Writer
 		gz, err := gzip.NewWriterLevel(c.Writer, level)
 		if err != nil {
 			io.WriteString(c.Writer, err.Error())

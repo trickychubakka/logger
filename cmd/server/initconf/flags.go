@@ -1,10 +1,10 @@
-package initconfig
+package initconf
 
 import (
 	"flag"
 	"fmt"
-	"go.uber.org/zap"
 	"log"
+	"logger/internal/storage/memstorage"
 	"net"
 	"net/url"
 	"os"
@@ -30,9 +30,11 @@ func IsValidIP(ip string) bool {
 	//return true
 }
 
+var Store = memstorage.New()
+
 var Conf Config
 
-var sugar zap.SugaredLogger
+//var sugar zap.SugaredLogger
 
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
