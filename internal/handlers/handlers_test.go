@@ -3,6 +3,7 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"logger/cmd/server/initconf"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -158,7 +159,7 @@ func TestGetMetric(t *testing.T) {
 	}
 
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := Store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := initconf.Store.UpdateGauge("metric1", 7.77); err != nil {
 		t.Error(err)
 	}
 
@@ -218,7 +219,7 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := Store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := initconf.Store.UpdateGauge("metric1", 7.77); err != nil {
 		//t.Fatal(err)
 		t.Error(err)
 	}
@@ -249,11 +250,9 @@ func TestGetAllMetrics(t *testing.T) {
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
-			//defer res.Body.Close()
 			defer tt.args.w.Result().Body.Close()
 			//assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
 			//require.NoError(t, err)
-
 		})
 	}
 }

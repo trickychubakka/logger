@@ -100,8 +100,7 @@ func main() {
 	}
 	log.Println("initconf is:", initconf.Conf)
 
-	//defer os.WriteFile("interrupt.dump", []byte("TEST!"), 0666)
-	defer internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
+	//defer internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
 
 	if initconf.Conf.Restore {
 		if err := internal.Load(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
