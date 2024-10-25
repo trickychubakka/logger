@@ -37,7 +37,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:    initconfig.Config{"localhost:8080", ""},
+				conf:    initconfig.Config{"localhost:8080", "", 0, "dump", true},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,
@@ -45,14 +45,14 @@ func Test_initConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		// Включение режима тестирования для отключения парсинга параметров командной строки
-		FlagTest = true
+		initconfig.FlagTest = true
 
 		t.Run(tt.name, func(t *testing.T) {
 			if err := setEnv(tt.args.envAddr); err != nil {
 				panic(err)
 			}
 			//if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
-			if err := initconfig.initConfig(&tt.args.conf); (err != nil) != tt.wantErr {
+			if err := initconfig.InitConfig(&tt.args.conf); (err != nil) != tt.wantErr {
 				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
