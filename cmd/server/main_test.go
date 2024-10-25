@@ -1,6 +1,7 @@
 package main
 
 import (
+	"logger/cmd/server/initconfig"
 	"os"
 	"testing"
 )
@@ -16,7 +17,7 @@ func setEnv(envAddr string) error {
 func Test_initConfig(t *testing.T) {
 
 	type args struct {
-		conf    Config
+		conf    initconfig.Config
 		envAddr string
 	}
 
@@ -28,7 +29,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    Config{"localhost:8080", ""},
+				conf:    initconfig.Config{"localhost:8080", ""},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,
@@ -36,7 +37,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:    Config{"localhost:8080", ""},
+				conf:    initconfig.Config{"localhost:8080", ""},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,
@@ -51,7 +52,7 @@ func Test_initConfig(t *testing.T) {
 				panic(err)
 			}
 			//if err := initConfig(tt.args.h, tt.args.r, tt.args.p, &tt.args.conf); (err != nil) != tt.wantErr {
-			if err := initConfig(&tt.args.conf); (err != nil) != tt.wantErr {
+			if err := initconfig.initConfig(&tt.args.conf); (err != nil) != tt.wantErr {
 				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

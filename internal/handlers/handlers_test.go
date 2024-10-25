@@ -157,8 +157,8 @@ func TestGetMetric(t *testing.T) {
 		contentType string
 	}
 
-	// Создадим в store метрику metric1 со значением 7.77
-	if err := store.UpdateGauge("metric1", 7.77); err != nil {
+	// Создадим в Store метрику metric1 со значением 7.77
+	if err := Store.UpdateGauge("metric1", 7.77); err != nil {
 		t.Error(err)
 	}
 
@@ -217,8 +217,8 @@ func TestGetAllMetrics(t *testing.T) {
 		contentType string
 	}
 
-	// Создадим в store метрику metric1 со значением 7.77
-	if err := store.UpdateGauge("metric1", 7.77); err != nil {
+	// Создадим в Store метрику metric1 со значением 7.77
+	if err := Store.UpdateGauge("metric1", 7.77); err != nil {
 		//t.Fatal(err)
 		t.Error(err)
 	}
