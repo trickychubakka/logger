@@ -17,8 +17,11 @@ func setEnv(envAddr string) error {
 func Test_initConfig(t *testing.T) {
 
 	type args struct {
-		conf    initconfig.Config
-		envAddr string
+		conf                initconfig.Config
+		envAddr             string
+		StoreMetricInterval int
+		FileStoragePath     string
+		Restore             bool
 	}
 
 	tests := []struct {
