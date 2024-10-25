@@ -29,7 +29,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    initconfig.Config{"localhost:8080", ""},
+				conf:    initconfig.Config{"localhost:8080", "", 0, "dump", true},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,

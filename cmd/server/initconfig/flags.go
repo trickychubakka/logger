@@ -137,7 +137,7 @@ func InitConfig(conf *Config) error {
 		log.Println("env var RESTORE was specified, use RESTORE =", envRestore)
 		tmp, err := strconv.ParseBool(envRestore)
 		if err != nil {
-			return fmt.Errorf("invalid RESTORE variable `%b`", tmp)
+			return fmt.Errorf("invalid RESTORE variable `%t`", tmp)
 		}
 		conf.Restore = tmp
 		log.Println("Using env var RESTORE=", conf.Restore)
