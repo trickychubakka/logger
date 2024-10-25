@@ -1,7 +1,7 @@
 package memstorage
 
 import (
-	"logger/internal/storage"
+	//"logger/internal/storage"
 	"reflect"
 	"testing"
 )
@@ -89,11 +89,12 @@ func TestMemStorage_UpdateGauge(t *testing.T) {
 func TestNew(t *testing.T) {
 	tests := []struct {
 		name string
-		want storage.Storager
+		//want storage.Storager
+		want MemStorage
 	}{
 		{
 			name: "Test positive New()",
-			want: &MemStorage{
+			want: MemStorage{
 				GaugeMap:    make(map[string]float64),
 				CounterName: make(map[string]int64),
 			},

@@ -32,7 +32,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    initconfig.Config{"localhost:8080", "", 0, "dump", true},
+				conf:    initconfig.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,
@@ -40,7 +40,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:    initconfig.Config{"localhost:8080", "", 0, "dump", true},
+				conf:    initconfig.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,
