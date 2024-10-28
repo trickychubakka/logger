@@ -52,8 +52,6 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
-//func urlToMetric(url string) (Metric, error) {}
-
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
 func MetricsHandler(c *gin.Context) {
 	splittedURL, err := urlToMap(c.Request.URL.String())
@@ -189,7 +187,6 @@ func GetAllMetrics(c *gin.Context) {
 		c.String(http.StatusOK, "\nCounter metrics:")
 		c.IndentedJSON(http.StatusOK, metrics)
 	}
-	//c.Header("content-type", "text/plain; charset=utf-8")
 }
 
 // GetMetric получить значение метрики
@@ -263,15 +260,3 @@ func GetMetricJSON(c *gin.Context) {
 		log.Println("GetMetricJSON Writer.Write error:", err)
 	}
 }
-
-//func SyncDumpUpdate() gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		c.Next()
-//		log.Println("SyncDumpUpdate toreMetricInterval :", initconf.Conf.initconf.StoreMetricInterval)
-//		if initconf.Conf.initconf.StoreMetricInterval == 0 {
-//			log.Println("sync flush metric into dump")
-//			internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
-//		}
-//		//c.Next()
-//	}
-//}

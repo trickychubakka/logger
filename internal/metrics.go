@@ -78,7 +78,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 
 		err = zb.Close()
 		if err != nil {
-			log.Println("SendRequest. Error closing gzip writer:", err)
+			log.Println("SendRequest. Error closing compress writer:", err)
 		}
 		body = bytes.NewReader(buf.Bytes())
 	}
@@ -93,12 +93,12 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		defer req.Body.Close()
 	}
 
-	//req, err := http.NewRequest(http.MethodPost, url, body) // без gzip
+	//req, err := http.NewRequest(http.MethodPost, url, body) // без compress
 	req.Close = true
 
 	req.Header.Set("Content-Type", contentType)
-	// gzip
-	req.Header.Set("Content-Encoding", "gzip")
+	// compress
+	req.Header.Set("Content-Encoding", "compress")
 
 	log.Println("req.Header is:", req.Header)
 	//var response *http.Response
@@ -125,7 +125,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 //	//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
 //
 //	var buf bytes.Buffer
-//	zb := gzip.NewWriter(&buf)
+//	zb := compress.NewWriter(&buf)
 //
 //	_, err := zb.Write(body)
 //	//err = zb.Close()
@@ -140,8 +140,8 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 //	//req.Close = true //???
 //	defer req.Body.Close()
 //
-//	//req, err := http.NewRequest(http.MethodPost, url, body) // без gzip
-//	//req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body)) // без gzip
+//	//req, err := http.NewRequest(http.MethodPost, url, body) // без compress
+//	//req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body)) // без compress
 //	//req.Close = true
 //	if err != nil {
 //		log.Println("Panic in SendRequest(): ", err)
@@ -149,9 +149,9 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 //	}
 //
 //	req.Header.Set("Content-Type", contentType)
-//	// gzip
-//	req.Header.Set("Content-Encoding", "gzip")
-//	req.Header.Set("Accept-Encoding", "gzip")
+//	// compress
+//	req.Header.Set("Content-Encoding", "compress")
+//	req.Header.Set("Accept-Encoding", "compress")
 //
 //	log.Println("req.Header is:", req.Header)
 //	var response *http.Response
@@ -330,7 +330,7 @@ func PingServer(url string, contentType string) (*http.Response, error) {
 	var tmpMetric = Metrics{"Ping", "counter", &tmpVar, nil}
 	payload, _ := json.Marshal(tmpMetric)
 
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload)) // без gzip
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload)) // без compress
 	if err != nil {
 		log.Println("Panic in PingServer(): ", err)
 		panic(err)

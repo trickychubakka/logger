@@ -1,4 +1,4 @@
-package gzip
+package compress
 
 import (
 	"compress/gzip"
@@ -45,13 +45,13 @@ func GzipResponseHandle(level int) gin.HandlerFunc {
 			return
 		}
 
-		// создаём gzip.Writer поверх текущего c.Writer
+		// создаём compress.Writer поверх текущего c.Writer
 		gz, err := gzip.NewWriterLevel(c.Writer, level)
 		if err != nil {
 			io.WriteString(c.Writer, err.Error())
 			return
 		}
-		c.Header("Content-Encoding", "gzip")
+		c.Header("Content-Encoding", "compress")
 		c.Header("Vary", "Accept-Encoding")
 		c.Writer = &gzipWriter{c.Writer, gz}
 		defer func() {
@@ -63,19 +63,19 @@ func GzipResponseHandle(level int) gin.HandlerFunc {
 }
 
 func shouldCompress(req *http.Request) bool {
-	if !strings.Contains(req.Header.Get("Accept-Encoding"), "gzip") {
+	if !strings.Contains(req.Header.Get("Accept-Encoding"), "compress") {
 		log.Println("There is no Accept-Encoding.")
 		return false
 	}
 
 	// Если Content-Type запроса содержится в contentTypeToCompressMap -- включается сжатие
 	if contentTypeToCompressMap[req.Header.Get("content-type")] {
-		log.Println("gzip compression for Content-Type", req.Header.Get("content-type"), "enabled")
+		log.Println("compress compression for Content-Type", req.Header.Get("content-type"), "enabled")
 		return true
 	}
 
 	if contentTypeToCompressMap[req.Header.Get("Accept")] {
-		log.Println("gzip compression for Content-Type", req.Header.Get("content-type"), "enabled")
+		log.Println("compress compression for Content-Type", req.Header.Get("content-type"), "enabled")
 		return true
 	}
 
@@ -84,8 +84,8 @@ func shouldCompress(req *http.Request) bool {
 }
 
 func GzipRequestHandle(c *gin.Context) {
-	if c.Request.Header.Get(`Content-Encoding`) == `gzip` {
-		log.Println("gzip decompression")
+	if c.Request.Header.Get(`Content-Encoding`) == `compress` {
+		log.Println("compress decompression")
 		gz, err := gzip.NewReader(c.Request.Body)
 		if err != nil {
 			log.Println("Error in GzipRequestHandle:", err)

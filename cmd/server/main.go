@@ -8,41 +8,21 @@ import (
 	"os/signal"
 	"syscall"
 
-	//"compress/gzip"
+	//"compress/compress"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
 	"logger/cmd/server/initconf"
-	mygzip "logger/internal/gzip"
+	mygzip "logger/internal/compress"
 	"logger/internal/handlers"
 	"logger/internal/logging"
 	"os"
 	"time"
 )
 
-// var conf Config
-
-// Для возможности использования Zap -- в каждом модуле определять?
+// Для возможности использования Zap
 var sugar zap.SugaredLogger
-
-//
-//// FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
-//var FlagTest = false
-
-//type tcpKeepAliveListener struct {
-//	*net.TCPListener
-//}
-//
-//func (ln tcpKeepAliveListener) Accept() (c net.Conn, err error) {
-//	tc, err := ln.AcceptTCP()
-//	if err != nil {
-//		return
-//	}
-//	tc.SetKeepAlive(true)
-//	tc.SetKeepAlivePeriod(3 * time.Minute)
-//	return tc, nil
-//}
 
 // task функция для старта дампа метрик на диск
 func task(ctx context.Context, interval int, store *memstorage.MemStorage) {
@@ -74,8 +54,6 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		//cleanup()
-		//os.WriteFile("interrupt.dump", []byte("TEST!"), 0666)
 		err := internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
 		if err != nil {
 			return
@@ -99,8 +77,6 @@ func main() {
 		panic(err)
 	}
 	log.Println("initconf is:", initconf.Conf)
-
-	//defer internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
 
 	if initconf.Conf.Restore {
 		if err := internal.Load(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
@@ -129,13 +105,12 @@ func main() {
 	}
 
 	router := gin.Default()
-	//router.Use(limit.Limit(200))
+
 	router.Use(logging.WithLogging(&sugar))
-	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN gzip "github.com/gin-contrib/gzip"
-	//router.Use(gin.Recovery())
-	//custom gzip handlers
+	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
+
 	router.Use(mygzip.GzipRequestHandle)
-	//router.Use(mygzip.GzipResponseHandle(gzip.DefaultCompression))
+	//router.Use(mygzip.GzipResponseHandle(compress.DefaultCompression))
 	router.Use(internal.SyncDumpUpdate())
 	router.GET("/", handlers.GetAllMetrics)
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)
