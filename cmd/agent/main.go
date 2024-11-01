@@ -36,7 +36,6 @@ func run(myMetrics internal.MetricsStorage) {
 		firstRun = false
 
 		if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
-			//if err := internal.SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
 			log.Println("Error main in SendMetricsJSON:")
 			log.Println(err)
 		}

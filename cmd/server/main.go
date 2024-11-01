@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"logger/internal"
+	"logger/internal/database"
 	"logger/internal/storage/memstorage"
 	"os/signal"
 	"syscall"
@@ -92,7 +93,9 @@ func main() {
 		go task(ctx, initconf.Conf.StoreMetricInterval, &initconf.Store)
 	}
 
-	sugar.Infow("initConfig sugar logging", "conf", initconf.Conf.RunAddr)
+	sugar.Infow("initConfig sugar logging", "conf.RunAddr", initconf.Conf.RunAddr)
+
+	// Изменение режима работы GIN
 	//gin.SetMode(gin.ReleaseMode)
 
 	if initconf.Conf.Logfile != "" {
@@ -103,6 +106,14 @@ func main() {
 		log.SetOutput(file)
 		defer file.Close()
 	}
+
+	log.Println("Connecting to base")
+	db := database.Postgresql{}
+	err = db.Connect()
+	if err != nil {
+		log.Println("Error connecting to database: %v", err)
+	}
+	defer db.Close()
 
 	router := gin.Default()
 
@@ -117,6 +128,7 @@ func main() {
 	router.POST("/update", handlers.MetricHandlerJSON)
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric)
 	router.POST("/value", handlers.GetMetricJSON)
+	router.GET("/ping", handlers.DBPing(db.DB))
 
 	err = router.Run(initconf.Conf.RunAddr)
 	if err != nil {

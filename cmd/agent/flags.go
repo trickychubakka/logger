@@ -22,10 +22,6 @@ type Config struct {
 func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
 	return res != nil
-	//if res == nil {
-	//	return false
-	//}
-	//return true
 }
 
 // initConfig функция инициализации конфигурации агента с использованием параметров командной строки
