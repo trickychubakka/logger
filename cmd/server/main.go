@@ -8,13 +8,12 @@ import (
 	"os/signal"
 	"syscall"
 
-	//"compress/compress"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
 	"logger/cmd/server/initconf"
-	mygzip "logger/internal/compress"
+	"logger/internal/compress"
 	"logger/internal/handlers"
 	"logger/internal/logging"
 	"os"
@@ -93,6 +92,7 @@ func main() {
 	}
 
 	sugar.Infow("initConfig sugar logging", "conf", initconf.Conf.RunAddr)
+	// set ReleaseMode of GIN
 	//gin.SetMode(gin.ReleaseMode)
 
 	if initconf.Conf.Logfile != "" {
@@ -109,8 +109,7 @@ func main() {
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
 
-	router.Use(mygzip.GzipRequestHandle)
-	//router.Use(mygzip.GzipResponseHandle(compress.DefaultCompression))
+	router.Use(compress.GzipRequestHandle)
 	router.Use(internal.SyncDumpUpdate())
 	router.GET("/", handlers.GetAllMetrics)
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)

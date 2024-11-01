@@ -9,8 +9,6 @@ import (
 	"os"
 )
 
-//var storageFile = memstorage.New()
-
 // Save функция сохранения дампа метрик в файл.
 func Save(store *memstorage.MemStorage, fname string) error {
 	// сериализуем структуру в JSON формат
@@ -63,6 +61,5 @@ func SyncDumpUpdate() gin.HandlerFunc {
 				log.Println("SyncDumpUpdate error:", err)
 			}
 		}
-		//c.Next()
 	}
 }

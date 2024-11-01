@@ -28,7 +28,7 @@ func NewMetricsStorageObj() MetricsStorage {
 }
 
 // MetricsPolling -- заполнение словаря метрик перебором всех полей структуры MemStats через reflect
-// с выбором метрик небходимых типов
+// с выбором метрик необходимых типов
 func MetricsPolling(metrics *MetricsStorage) error {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
@@ -55,9 +55,6 @@ func MetricsPolling(metrics *MetricsStorage) error {
 }
 
 func SendRequest(client *http.Client, url string, body io.Reader, contentType string) (*http.Response, error) {
-	//func SendRequest(url string, body io.Reader, contentType string) (*http.Response, error) {
-	//log.Println("body is:", body)
-	//var bb io.Reader
 
 	if body != nil {
 
@@ -66,7 +63,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			log.Println("SendRequest. Error reading body:", err)
 			return nil, err
 		}
-		//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
 
 		var buf bytes.Buffer
 		zb := gzip.NewWriter(&buf)
@@ -93,15 +89,12 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		defer req.Body.Close()
 	}
 
-	//req, err := http.NewRequest(http.MethodPost, url, body) // без compress
 	req.Close = true
 
 	req.Header.Set("Content-Type", contentType)
-	// compress
 	req.Header.Set("Content-Encoding", "compress")
 
 	log.Println("req.Header is:", req.Header)
-	//var response *http.Response
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 
 	response, err := client.Do(req)
@@ -117,67 +110,8 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	return response, nil
 }
 
-//
-// ###func SendRequest(client *http.Client, url string, body io.Reader, contentType string) (*http.Response, error) {
-//func SendRequest(url string, body []byte, contentType string) (*http.Response, error) {
-//	//log.Println("body is:", body)
-//	//b, err := io.ReadAll(body)
-//	//log.Println("body io.Reader in start of SendRequest is", b) //, string(b))
-//
-//	var buf bytes.Buffer
-//	zb := compress.NewWriter(&buf)
-//
-//	_, err := zb.Write(body)
-//	//err = zb.Close()
-//
-//	bb := bytes.NewReader(buf.Bytes())
-//	err = zb.Close()
-//	//
-//	log.Println("bb before NewRequest is:", bb, "url is:", url)
-//
-//	//req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(buf.Bytes()))
-//	req, err := http.NewRequest(http.MethodPost, url, bb)
-//	//req.Close = true //???
-//	defer req.Body.Close()
-//
-//	//req, err := http.NewRequest(http.MethodPost, url, body) // без compress
-//	//req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(body)) // без compress
-//	//req.Close = true
-//	if err != nil {
-//		log.Println("Panic in SendRequest(): ", err)
-//		panic(err)
-//	}
-//
-//	req.Header.Set("Content-Type", contentType)
-//	// compress
-//	req.Header.Set("Content-Encoding", "compress")
-//	req.Header.Set("Accept-Encoding", "compress")
-//
-//	log.Println("req.Header is:", req.Header)
-//	var response *http.Response
-//	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
-//
-//	response, err = client.Do(req)
-//	//io.Copy(io.Discard, response.Body) //
-//	//if response, err := client.Do(req); response != nil {
-//	if response != nil {
-//		log.Println("response is:", response)
-//		defer response.Body.Close()
-//	} else if err != nil {
-//		log.Println("WARNING!!!!!", err, "; response is", response)
-//		panic(err)
-//	}
-//
-//	//defer response.Body.Close()
-//
-//	//log.Println("Header is:", response.Header)
-//
-//	return response, nil
-//}
-
 // SendMetrics отсылка метрик на сервер
 func SendMetrics(metrics *MetricsStorage, c string) error {
-	//client := &http.Client{}
 	count := 0
 
 	// Цикл для отсылки метрик типа gaugeMap
@@ -187,13 +121,11 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "count:", count)
 
 		response, err := SendRequest(client, reqURL, nil, "text/plain")
-		//response, err := SendRequest(reqURL, nil, "text/plain")
 		if err != nil {
 			return err
 		}
 		defer response.Body.Close()
 
-		//response.Body.Close()
 		log.Println("response status:", response.Status)
 	}
 
@@ -204,7 +136,6 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "count:", count)
 
 		response, err := SendRequest(client, reqURL, nil, "text/plain")
-		//response, err := SendRequest(reqURL, nil, "text/plain")
 		if err != nil {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
@@ -224,7 +155,6 @@ type Metrics struct {
 }
 
 func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
-	//###client := &http.Client{}
 	count := 0
 
 	// Цикл для отсылки метрик типа gaugeMap
@@ -240,7 +170,6 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 			return err
 		}
 		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-		//response, err := SendRequest(reqURL, bytes.NewReader(payload), "application/json")
 		if err != nil {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
@@ -261,7 +190,6 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 		}
 
 		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-		//response, err := SendRequest(reqURL, bytes.NewReader(payload), "application/json")
 
 		if err != nil {
 			log.Println("Error in SendMetricsJSON from SendRequest", err)
@@ -271,57 +199,6 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 	}
 	return nil
 }
-
-//func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
-//	//###client := &http.Client{}
-//	count := 0
-//
-//	// Цикл для отсылки метрик типа gaugeMap
-//	for m := range metrics.gaugeMap {
-//		count++
-//		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "JSON count:", count)
-//		valGauge := metrics.gaugeMap[m]
-//		var tmpMetric = Metrics{m, "gauge", nil, &valGauge}
-//
-//		payload, err := json.Marshal(tmpMetric)
-//		log.Println("payload in SendMetrics is:", string(payload))
-//		if err != nil {
-//			return err
-//		}
-//		//###response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-//		//response, err := SendRequest(reqURL, bytes.NewReader(payload), "application/json")
-//		response, err := SendRequest(reqURL, payload, "application/json")
-//		if err != nil {
-//			log.Println("Error Send Metrics in SendRequest call:", err)
-//			return err
-//		}
-//		defer response.Body.Close()
-//	}
-//
-//	// Цикл для отсылки метрик типа counterMap
-//	for m := range metrics.counterMap {
-//		count++
-//		log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "JSON count:", count)
-//		valCounter := metrics.counterMap[m]
-//		var tmpMetric = Metrics{m, "counter", &valCounter, nil}
-//
-//		payload, err := json.Marshal(tmpMetric)
-//		if err != nil {
-//			return err
-//		}
-//
-//		//###response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-//		//response, err := SendRequest(reqURL, bytes.NewReader(payload), "application/json")
-//		response, err := SendRequest(reqURL, payload, "application/json")
-//
-//		if err != nil {
-//			log.Println("Error in SendMetricsJSON from SendRequest", err)
-//			return err
-//		}
-//		defer response.Body.Close()
-//	}
-//	return nil
-//}
 
 // PingServer -- функция пинга сервера для решения проблемы metrictests
 func PingServer(url string, contentType string) (*http.Response, error) {

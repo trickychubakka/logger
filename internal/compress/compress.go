@@ -44,7 +44,6 @@ func GzipResponseHandle(level int) gin.HandlerFunc {
 			c.Next()
 			return
 		}
-
 		// создаём compress.Writer поверх текущего c.Writer
 		gz, err := gzip.NewWriterLevel(c.Writer, level)
 		if err != nil {

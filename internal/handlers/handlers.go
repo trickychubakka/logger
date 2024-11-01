@@ -1,9 +1,5 @@
 package handlers
 
-//import "C"
-
-//import "C"
-
 import (
 	"bytes"
 	"encoding/json"
@@ -29,13 +25,6 @@ const (
 	metricValue = 3
 )
 
-//type Metrics struct {
-//	ID    string   `json:"id"`              // Имя метрики
-//	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter
-//	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
-//	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
-//}
-
 // urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
 func urlToMap(url string) ([]string, error) {
 	splittedURL := strings.Split(strings.Trim(url, "/"), "/")
@@ -48,7 +37,6 @@ func urlToMap(url string) ([]string, error) {
 		log.Println("Error in urlToMap: URL is too long")
 		return splittedURL, errors.New("URL is too long")
 	}
-	//fmt.Println("urlToMap:", splittedURL)
 	return splittedURL, nil
 }
 
@@ -97,7 +85,6 @@ func MetricsHandler(c *gin.Context) {
 
 // MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
 func MetricHandlerJSON(c *gin.Context) {
-	//log.Println("We are in MetricHandlerJSON")
 	jsn, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
@@ -144,8 +131,7 @@ func MetricHandlerJSON(c *gin.Context) {
 	log.Println("Request from j2:", j2)
 
 	resp, err := json.Marshal(tmpMetric)
-	//log.Println("MetricHandler after json.Marshal, response is ", resp)
-	//log.Println("MetricHandler after json.Marshal, string response is ", string(resp))
+
 	if err != nil {
 		log.Println("Error in json.Marshal in handlers:", err)
 		c.Status(http.StatusInternalServerError)
@@ -160,33 +146,19 @@ func MetricHandlerJSON(c *gin.Context) {
 
 	log.Println("Initconfig before Save is:", initconf.Conf)
 	log.Println("start SAVE metrics dump to file: ", initconf.Conf.FileStoragePath, "Store is:", initconf.Store)
-
-	//if err := internal.Save(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
-	//	log.Println("Error in internal.Save:", err)
-	//}
-
 }
 
 // GetAllMetrics получить все метрики
 func GetAllMetrics(c *gin.Context) {
-	// Get all Gauge metrics
-	if metrics, err := initconf.Store.GetAllGaugesMap(); err != nil {
+
+	metrics, err := initconf.Store.GetAllMetrics()
+	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
-	} else {
-		c.Header("content-type", "text/html; charset=utf-8")
-		c.String(http.StatusOK, "Gauge metrics:")
-		c.IndentedJSON(http.StatusOK, metrics)
 	}
-	// Get all Counter metrics
-	if metrics, err := initconf.Store.GetAllCountersMap(); err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	} else {
-		c.Header("content-type", "text/html; charset=utf-8")
-		c.String(http.StatusOK, "\nCounter metrics:")
-		c.IndentedJSON(http.StatusOK, metrics)
-	}
+	c.Header("content-type", "text/html; charset=utf-8")
+	c.Status(http.StatusOK)
+	c.IndentedJSON(http.StatusOK, metrics)
 }
 
 // GetMetric получить значение метрики
@@ -240,7 +212,6 @@ func GetMetricJSON(c *gin.Context) {
 	}
 	if err != nil {
 		log.Println("Requested metric value with status 404", tmpMetric)
-		//log.Println("error is", err)
 		c.Status(http.StatusNotFound)
 		return
 	}
