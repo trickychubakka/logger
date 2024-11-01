@@ -111,7 +111,7 @@ func main() {
 	db := database.Postgresql{}
 	err = db.Connect()
 	if err != nil {
-		log.Println("Error connecting to database: %v", err)
+		log.Println("Error connecting to database :", err)
 	}
 	defer db.Close()
 

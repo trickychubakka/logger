@@ -36,7 +36,7 @@ func (p *Postgresql) Connect() error {
 		} else {
 			err = viper.Unmarshal(&p.cfg)
 			if err != nil {
-				log.Println("Error unmarshalling conf, %s", err)
+				log.Println("Error unmarshalling conf :", err)
 				return err
 			}
 		}
@@ -45,8 +45,9 @@ func (p *Postgresql) Connect() error {
 	} else {
 		log.Println("flags or DATABASE_DSN env defined, starting db connect with this conf")
 		connStr = initconf.Conf.DatabaseDSN
-		zp := regexp.MustCompile("(://)|/|@|:|\\?")
+		zp := regexp.MustCompile(`(://)|/|@|:|\?`)
 		connStrMap := zp.Split(connStr, -1)
+		// Получаем map вида [postgres user password address port user sslmode=disable]
 		log.Println("connStrMap:", connStrMap)
 		p.cfg.Database.User = connStrMap[1]
 		p.cfg.Database.Password = connStrMap[2]
@@ -59,11 +60,11 @@ func (p *Postgresql) Connect() error {
 	log.Println("Connection string to database:", connStr)
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		log.Println("Error connecting to database, %s", err)
+		log.Println("Error connecting to database :", err)
 		return err
 	}
 	//defer db.Close()
-	log.Println("Connected to database with DSN %s", connStr)
+	log.Println("Connected to database with DSN :", connStr)
 	p.DB = db
 	return nil
 }
