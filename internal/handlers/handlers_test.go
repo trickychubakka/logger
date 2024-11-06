@@ -3,12 +3,15 @@ package handlers
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"logger/cmd/server/initconf"
+	//"logger/cmd/server/initconf"
+	"logger/internal/storage/memstorage"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 )
+
+var store = memstorage.New()
 
 // SetTestGinContext вспомогательная функция создания Gin контекста
 func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) (*gin.Context, error) {
@@ -92,7 +95,8 @@ func TestMetricHandler(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			MetricsHandler(c)
+			//MetricsHandler(c)
+			MetricsHandler(&store)(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
@@ -159,7 +163,7 @@ func TestGetMetric(t *testing.T) {
 	}
 
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := initconf.Store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := store.UpdateGauge("metric1", 7.77); err != nil {
 		t.Error(err)
 	}
 
@@ -195,7 +199,8 @@ func TestGetMetric(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			GetMetric(c)
+			GetMetric(&store)(c)
+			//GetMetric(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
@@ -219,7 +224,7 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := initconf.Store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := store.UpdateGauge("metric1", 7.77); err != nil {
 		//t.Fatal(err)
 		t.Error(err)
 	}
@@ -246,7 +251,8 @@ func TestGetAllMetrics(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			GetAllMetrics(c)
+			GetAllMetrics(&store)(c)
+			//GetAllMetrics(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
