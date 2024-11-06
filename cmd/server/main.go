@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	//"compress/compress"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -24,6 +23,9 @@ import (
 
 // Для возможности использования Zap
 var sugar zap.SugaredLogger
+
+// Store Инициализация хранилища метрик
+var store = memstorage.New()
 
 // task функция для старта дампа метрик на диск
 func task(ctx context.Context, interval int, store *memstorage.MemStorage) {
@@ -55,7 +57,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := internal.Save(&initconf.Store, initconf.Conf.FileStoragePath)
+		err := internal.Save(&store, initconf.Conf.FileStoragePath)
 		if err != nil {
 			return
 		}
@@ -80,7 +82,7 @@ func main() {
 	log.Println("initconf is:", initconf.Conf)
 
 	if initconf.Conf.Restore {
-		if err := internal.Load(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
+		if err := internal.Load(&store, initconf.Conf.FileStoragePath); err != nil {
 			log.Println("Error in initial dump load:", err)
 		}
 	}
@@ -90,7 +92,7 @@ func main() {
 		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
 		ctx, cancel = context.WithCancel(context.Background())
 		// запускаем горутину
-		go task(ctx, initconf.Conf.StoreMetricInterval, &initconf.Store)
+		go task(ctx, initconf.Conf.StoreMetricInterval, &store)
 	}
 
 	sugar.Infow("initConfig sugar logging", "conf.RunAddr", initconf.Conf.RunAddr)
@@ -122,12 +124,12 @@ func main() {
 
 	router.Use(mygzip.GzipRequestHandle)
 	//router.Use(mygzip.GzipResponseHandle(compress.DefaultCompression))
-	router.Use(internal.SyncDumpUpdate())
-	router.GET("/", handlers.GetAllMetrics)
-	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler)
-	router.POST("/update", handlers.MetricHandlerJSON)
-	router.GET("/value/:metricType/:metricName", handlers.GetMetric)
-	router.POST("/value", handlers.GetMetricJSON)
+	router.Use(internal.SyncDumpUpdate(&store))
+	router.GET("/", handlers.GetAllMetrics(&store))
+	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(&store))
+	router.POST("/update", handlers.MetricHandlerJSON(&store))
+	router.GET("/value/:metricType/:metricName", handlers.GetMetric(&store))
+	router.POST("/value", handlers.GetMetricJSON(&store))
 	router.GET("/ping", handlers.DBPing(db.DB))
 
 	err = router.Run(initconf.Conf.RunAddr)

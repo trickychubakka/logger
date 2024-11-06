@@ -9,8 +9,12 @@ import (
 	"os"
 )
 
+type Storager interface {
+	GetAllMetrics() (any, error)
+}
+
 // Save функция сохранения дампа метрик в файл.
-func Save(store *memstorage.MemStorage, fname string) error {
+func Save(store Storager, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics()
 	if err != nil {
@@ -51,13 +55,13 @@ func Load(store *memstorage.MemStorage, fname string) error {
 
 // SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики
 // Для случая ключа STORE_INTERVAL = 0
-func SyncDumpUpdate() gin.HandlerFunc {
+func SyncDumpUpdate(store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 		log.Println("SyncDumpUpdate StoreMetricInterval :", initconf.Conf.StoreMetricInterval)
 		if initconf.Conf.StoreMetricInterval == 0 {
 			log.Println("sync flush metric into dump")
-			if err := Save(&initconf.Store, initconf.Conf.FileStoragePath); err != nil {
+			if err := Save(store, initconf.Conf.FileStoragePath); err != nil {
 				log.Println("SyncDumpUpdate error:", err)
 			}
 		}

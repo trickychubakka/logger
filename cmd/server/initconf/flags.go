@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"logger/internal/storage/memstorage"
+	//"logger/internal/storage/memstorage"
 	"net"
 	"net/url"
 	"os"
@@ -27,7 +27,7 @@ func IsValidIP(ip string) bool {
 	return res != nil
 }
 
-var Store = memstorage.New()
+//var Store = memstorage.New()
 
 var Conf Config
 
