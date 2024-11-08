@@ -13,12 +13,12 @@ import (
 )
 
 type Postgresql struct {
-	cfg *conf.Config
+	Cfg *conf.Config
 	DB  *sql.DB
 }
 
 func (p *Postgresql) Connect() error {
-	p.cfg = &conf.Config{}
+	p.Cfg = &conf.Config{}
 
 	var connStr string
 	//connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", p.conf.Database.User, p.conf.Database.Password, p.conf.Database.Dbname, p.conf.Database.SslMode)
@@ -34,14 +34,15 @@ func (p *Postgresql) Connect() error {
 			log.Println("Error reading conf file :", err)
 			return err
 		} else {
-			err = viper.Unmarshal(&p.cfg)
+			err = viper.Unmarshal(&p.Cfg)
 			if err != nil {
 				log.Println("Error unmarshalling conf :", err)
 				return err
 			}
 		}
 
-		connStr = fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=%s", p.cfg.Database.User, p.cfg.Database.Password, p.cfg.Database.Host, p.cfg.Database.Dbname, p.cfg.Database.Sslmode)
+		connStr = fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=%s", p.Cfg.Database.User, p.Cfg.Database.Password, p.Cfg.Database.Host, p.Cfg.Database.Dbname, p.Cfg.Database.Sslmode)
+		initconf.Conf.DatabaseDSN = connStr
 	} else {
 		log.Println("flags or DATABASE_DSN env defined, starting db connect with this conf")
 		connStr = initconf.Conf.DatabaseDSN
@@ -49,12 +50,12 @@ func (p *Postgresql) Connect() error {
 		connStrMap := zp.Split(connStr, -1)
 		// Получаем map вида [postgres user password address port user sslmode=disable]
 		log.Println("connStrMap:", connStrMap)
-		p.cfg.Database.User = connStrMap[1]
-		p.cfg.Database.Password = connStrMap[2]
-		p.cfg.Database.Host = connStrMap[3]
-		p.cfg.Database.Dbname = connStrMap[5]
-		p.cfg.Database.Sslmode = strings.Split(connStrMap[6], "=")[1]
-		log.Println("p.cfg.Database is:", p.cfg.Database)
+		p.Cfg.Database.User = connStrMap[1]
+		p.Cfg.Database.Password = connStrMap[2]
+		p.Cfg.Database.Host = connStrMap[3]
+		p.Cfg.Database.Dbname = connStrMap[5]
+		p.Cfg.Database.Sslmode = strings.Split(connStrMap[6], "=")[1]
+		log.Println("p.Cfg.Database is:", p.Cfg.Database)
 	}
 
 	log.Println("Connection string to database:", connStr)
@@ -64,7 +65,7 @@ func (p *Postgresql) Connect() error {
 		return err
 	}
 	//defer db.Close()
-	log.Println("Connected to database with DSN :", connStr)
+	log.Println("Connected to database with DSN :", connStr, "with db:", db)
 	p.DB = db
 	return nil
 }

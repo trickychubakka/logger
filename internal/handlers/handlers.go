@@ -1,11 +1,8 @@
 package handlers
 
-//import "C"
-
-//import "C"
-
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -14,7 +11,6 @@ import (
 	"io"
 	"log"
 	"logger/cmd/server/initconf"
-	"logger/internal"
 	"net/http"
 	"strconv"
 	"strings"
@@ -28,13 +24,21 @@ const (
 	metricValue = 3
 )
 
+type Metrics struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
+
 type Storager interface {
-	UpdateGauge(key string, value float64) error
-	UpdateCounter(key string, value int64) error
-	GetGauge(key string) (float64, error)
-	GetCounter(key string) (int64, error)
-	GetValue(t string, key string) (any, error)
-	GetAllMetrics() (any, error)
+	UpdateGauge(ctx context.Context, key string, value float64) error
+	UpdateCounter(ctx context.Context, key string, value int64) error
+	GetGauge(ctx context.Context, key string) (float64, error)
+	GetCounter(ctx context.Context, key string) (int64, error)
+	GetValue(ctx context.Context, t string, key string) (any, error)
+	GetAllMetrics(ctx context.Context) (any, error)
+	Close() error
 }
 
 // urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
@@ -53,7 +57,7 @@ func urlToMap(url string) ([]string, error) {
 }
 
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
-func MetricsHandler(store Storager) gin.HandlerFunc {
+func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
 		if err != nil {
@@ -63,7 +67,7 @@ func MetricsHandler(store Storager) gin.HandlerFunc {
 		// metricHandler Обработка gauge метрики
 		if splittedURL[metricType] == "gauge" {
 			if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
-				if err := store.UpdateGauge(splittedURL[metricName], val); err != nil {
+				if err := store.UpdateGauge(ctx, splittedURL[metricName], val); err != nil {
 					c.Status(http.StatusInternalServerError)
 					return
 				}
@@ -75,7 +79,7 @@ func MetricsHandler(store Storager) gin.HandlerFunc {
 			// metricHandler Обработка counter метрик
 		} else if splittedURL[metricType] == "counter" {
 			if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
-				if err := store.UpdateCounter(splittedURL[metricName], val); err != nil {
+				if err := store.UpdateCounter(ctx, splittedURL[metricName], val); err != nil {
 					c.Status(http.StatusInternalServerError)
 					return
 				}
@@ -98,7 +102,7 @@ func MetricsHandler(store Storager) gin.HandlerFunc {
 }
 
 // MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
-func MetricHandlerJSON(store Storager) gin.HandlerFunc {
+func MetricHandlerJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -106,7 +110,8 @@ func MetricHandlerJSON(store Storager) gin.HandlerFunc {
 			return
 		}
 
-		var tmpMetric internal.Metrics
+		//var tmpMetric internal.Metrics
+		var tmpMetric Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
@@ -119,19 +124,19 @@ func MetricHandlerJSON(store Storager) gin.HandlerFunc {
 		log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
 
 		if tmpMetric.MType == "gauge" {
-			if err := store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
+			if err := store.UpdateGauge(ctx, tmpMetric.ID, *tmpMetric.Value); err != nil {
 				log.Println("Error in UpdateGauge:", err)
 				c.Status(http.StatusInternalServerError)
 				return
 			}
 		} else if tmpMetric.MType == "counter" {
-			if err := store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
+			if err := store.UpdateCounter(ctx, tmpMetric.ID, *tmpMetric.Delta); err != nil {
 				log.Println("Error in UpdateCounter:", err)
 				c.Status(http.StatusInternalServerError)
 				return
 			}
 			// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
-			if *tmpMetric.Delta, err = store.GetCounter(tmpMetric.ID); err != nil {
+			if *tmpMetric.Delta, err = store.GetCounter(ctx, tmpMetric.ID); err != nil {
 				log.Println("Error in GetCounter:", err)
 				c.Status(http.StatusInternalServerError)
 				return
@@ -164,10 +169,10 @@ func MetricHandlerJSON(store Storager) gin.HandlerFunc {
 }
 
 // GetAllMetrics получить все метрики
-func GetAllMetrics(store Storager) gin.HandlerFunc {
+func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		metrics, err := store.GetAllMetrics()
+		metrics, err := store.GetAllMetrics(ctx)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
@@ -179,13 +184,13 @@ func GetAllMetrics(store Storager) gin.HandlerFunc {
 }
 
 // GetMetric получить значение метрики
-func GetMetric(store Storager) gin.HandlerFunc {
+func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 		}
-		val, err := store.GetValue(splittedURL[metricType], splittedURL[metricName])
+		val, err := store.GetValue(ctx, splittedURL[metricType], splittedURL[metricName])
 		if err != nil {
 			fmt.Println("Error in GetMetric:", err)
 			c.Status(http.StatusNotFound)
@@ -203,7 +208,7 @@ func GetMetric(store Storager) gin.HandlerFunc {
 }
 
 // GetMetricJSON получить значение метрики через JSON
-func GetMetricJSON(store Storager) gin.HandlerFunc {
+func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
@@ -212,7 +217,8 @@ func GetMetricJSON(store Storager) gin.HandlerFunc {
 			return
 		}
 
-		var tmpMetric internal.Metrics
+		//var tmpMetric internal.Metrics
+		var tmpMetric Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
@@ -222,12 +228,12 @@ func GetMetricJSON(store Storager) gin.HandlerFunc {
 
 		if tmpMetric.MType == "gauge" {
 			var val float64
-			val, err = store.GetGauge(tmpMetric.ID)
+			val, err = store.GetGauge(ctx, tmpMetric.ID)
 			tmpMetric.Value = &val
 		}
 		if tmpMetric.MType == "counter" {
 			var delta int64
-			delta, err = store.GetCounter(tmpMetric.ID)
+			delta, err = store.GetCounter(ctx, tmpMetric.ID)
 			tmpMetric.Delta = &delta
 		}
 		if err != nil {

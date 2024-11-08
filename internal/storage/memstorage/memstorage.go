@@ -1,6 +1,7 @@
 package memstorage
 
 import (
+	"context"
 	"errors"
 )
 
@@ -10,25 +11,24 @@ type MemStorage struct {
 	CounterMap map[string]int64
 }
 
-// func New() storage.Storager {
-func New() MemStorage {
+func New(_ context.Context) (MemStorage, error) {
 	return MemStorage{
 		GaugeMap:   make(map[string]float64),
 		CounterMap: make(map[string]int64),
-	}
+	}, nil
 }
 
-func (ms *MemStorage) UpdateGauge(key string, value float64) error {
+func (ms MemStorage) UpdateGauge(_ context.Context, key string, value float64) error {
 	ms.GaugeMap[key] = value
 	return nil
 }
 
-func (ms *MemStorage) UpdateCounter(key string, value int64) error {
+func (ms MemStorage) UpdateCounter(_ context.Context, key string, value int64) error {
 	ms.CounterMap[key] += value
 	return nil
 }
 
-func (ms *MemStorage) GetGauge(key string) (float64, error) {
+func (ms MemStorage) GetGauge(_ context.Context, key string) (float64, error) {
 	val, ok := ms.GaugeMap[key]
 	//log.Println("GetGauge key:", key, "val:", val, "ok:", ok)
 	if !ok {
@@ -37,7 +37,7 @@ func (ms *MemStorage) GetGauge(key string) (float64, error) {
 	return val, nil
 }
 
-func (ms *MemStorage) GetCounter(key string) (int64, error) {
+func (ms MemStorage) GetCounter(_ context.Context, key string) (int64, error) {
 	val, ok := ms.CounterMap[key]
 	if !ok {
 		return 0, errors.New("no value for key " + key)
@@ -45,7 +45,7 @@ func (ms *MemStorage) GetCounter(key string) (int64, error) {
 	return val, nil
 }
 
-func (ms *MemStorage) GetValue(t string, key string) (any, error) {
+func (ms MemStorage) GetValue(_ context.Context, t string, key string) (any, error) {
 	if t == "counter" {
 		val, ok := ms.CounterMap[key]
 		if !ok {
@@ -63,14 +63,18 @@ func (ms *MemStorage) GetValue(t string, key string) (any, error) {
 	}
 }
 
-func (ms *MemStorage) GetAllGaugesMap() (map[string]float64, error) {
+func (ms MemStorage) GetAllGaugesMap(_ context.Context) (map[string]float64, error) {
 	return ms.GaugeMap, nil
 }
 
-func (ms *MemStorage) GetAllCountersMap() (map[string]int64, error) {
+func (ms MemStorage) GetAllCountersMap(_ context.Context) (map[string]int64, error) {
 	return ms.CounterMap, nil
 }
 
-func (ms *MemStorage) GetAllMetrics() (any, error) {
-	return *ms, nil
+func (ms MemStorage) GetAllMetrics(_ context.Context) (any, error) {
+	return ms, nil
+}
+
+func (ms MemStorage) Close() error {
+	return nil
 }
