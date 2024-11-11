@@ -40,24 +40,43 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 
 // Load функция чтения дампа метрик из файла. Применимо только для memstorage
 // func Load(_ context.Context, store handlers.Storager, fname string) error {
-func Load(store *handlers.Storager, fname string) error {
-
+// func Load(store *handlers.Storager, fname string) error {
+//
+//		// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
+//		var memStore memstorage.MemStorage
+//		data, err := os.ReadFile(fname)
+//		if err != nil {
+//			print("Save. Error read store dump file", fname)
+//			return err
+//		}
+//		//err = json.Unmarshal(data, &store)
+//		err = json.Unmarshal(data, &memStore)
+//		if err != nil {
+//			log.Println("Load. Error unmarshalling from file")
+//			return err
+//		}
+//		*store = memStore
+//		log.Println("storage from Load:", store)
+//		return nil
+//	}
+func Load(fname string) (handlers.Storager, error) {
+	var store handlers.Storager
 	// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
 	var memStore memstorage.MemStorage
 	data, err := os.ReadFile(fname)
 	if err != nil {
 		print("Save. Error read store dump file", fname)
-		return err
+		return nil, err
 	}
 	//err = json.Unmarshal(data, &store)
 	err = json.Unmarshal(data, &memStore)
 	if err != nil {
 		log.Println("Load. Error unmarshalling from file")
-		return err
+		return nil, err
 	}
-	*store = memStore
+	store = memStore
 	log.Println("storage from Load:", store)
-	return nil
+	return store, nil
 }
 
 // SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики

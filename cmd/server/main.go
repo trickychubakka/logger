@@ -66,11 +66,22 @@ func main() {
 
 	var err error
 	if initconf.Conf.DatabaseDSN == "" {
-		// Store Инициализация хранилища метрик
-		store, err = memstorage.New(ctx)
-		if err != nil {
-			log.Println("Error memstorage initialization.")
-			panic(err)
+		// если определена опция восстановления store из дампа
+		if initconf.Conf.Restore {
+			//store, err = internal.Load(&store, initconf.Conf.FileStoragePath)
+			log.Println("DatabaseDSN is not configured, Load metric dump from file")
+			store, err = internal.Load(initconf.Conf.FileStoragePath)
+			log.Println("Metric after dump load :", store)
+			if err != nil {
+				log.Println("Error in initial dump load:", err)
+			}
+		} else {
+			// Store Инициализация хранилища метрик
+			store, err = memstorage.New(ctx)
+			if err != nil {
+				log.Println("Error memstorage initialization.")
+				panic(err)
+			}
 		}
 	}
 	if initconf.Conf.DatabaseDSN != "" {
@@ -105,11 +116,11 @@ func main() {
 	// делаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
 
-	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.Restore {
-		if err := internal.Load(&store, initconf.Conf.FileStoragePath); err != nil {
-			log.Println("Error in initial dump load:", err)
-		}
-	}
+	//if initconf.Conf.DatabaseDSN == "" && initconf.Conf.Restore {
+	//	if err := internal.Load(&store, initconf.Conf.FileStoragePath); err != nil {
+	//		log.Println("Error in initial dump load:", err)
+	//	}
+	//}
 
 	/*
 		// PostgreSQL Store инициализация
