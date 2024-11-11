@@ -106,7 +106,7 @@ func main() {
 	sugar = *logger.Sugar()
 
 	if initconf.Conf.Restore {
-		if err := internal.Load(ctx, store, initconf.Conf.FileStoragePath); err != nil {
+		if err := internal.Load(store, initconf.Conf.FileStoragePath); err != nil {
 			log.Println("Error in initial dump load:", err)
 		}
 	}

@@ -38,9 +38,9 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 	return nil
 }
 
-// Load функция чтения дампа метрик из файла
-// func Load(ctx context.Context, store *memstorage.MemStorage, fname string) error {
-func Load(_ context.Context, store handlers.Storager, fname string) error {
+// Load функция чтения дампа метрик из файла. Применимо только для memstorage
+// func Load(_ context.Context, store handlers.Storager, fname string) error {
+func Load(store handlers.Storager, fname string) error {
 
 	// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
 	var memStore memstorage.MemStorage

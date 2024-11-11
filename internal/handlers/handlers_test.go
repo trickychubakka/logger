@@ -1,9 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	//"logger/cmd/server/initconf"
 	"logger/internal/storage/memstorage"
 	"net/http"
 	"net/http/httptest"
@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-var store = memstorage.New()
+//var store, err = memstorage.New(ctx)
 
 // SetTestGinContext вспомогательная функция создания Gin контекста
 func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) (*gin.Context, error) {
@@ -31,6 +31,9 @@ func TestMetricHandler(t *testing.T) {
 		code        int
 		contentType string
 	}
+	var ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	var store, _ = memstorage.New(ctx)
 	tests := []struct {
 		name string
 		args args
@@ -89,6 +92,7 @@ func TestMetricHandler(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c, err := SetTestGinContext(tt.args.w, tt.args.r)
@@ -96,7 +100,7 @@ func TestMetricHandler(t *testing.T) {
 				t.Fatal(err)
 			}
 			//MetricsHandler(c)
-			MetricsHandler(&store)(c)
+			MetricsHandler(ctx, &store)(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
@@ -161,9 +165,12 @@ func TestGetMetric(t *testing.T) {
 		code        int
 		contentType string
 	}
+	var ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	var store, _ = memstorage.New(ctx)
 
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
 		t.Error(err)
 	}
 
@@ -199,7 +206,7 @@ func TestGetMetric(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			GetMetric(&store)(c)
+			GetMetric(ctx, &store)(c)
 			//GetMetric(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
@@ -222,9 +229,11 @@ func TestGetAllMetrics(t *testing.T) {
 		code        int
 		contentType string
 	}
-
+	var ctx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	var store, _ = memstorage.New(ctx)
 	// Создадим в Store метрику metric1 со значением 7.77
-	if err := store.UpdateGauge("metric1", 7.77); err != nil {
+	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
 		//t.Fatal(err)
 		t.Error(err)
 	}
@@ -251,7 +260,7 @@ func TestGetAllMetrics(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			GetAllMetrics(&store)(c)
+			GetAllMetrics(ctx, &store)(c)
 			//GetAllMetrics(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())

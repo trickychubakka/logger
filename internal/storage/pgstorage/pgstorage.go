@@ -158,6 +158,9 @@ func (pg PgStorage) GetAllMetrics(ctx context.Context) (any, error) {
 		}
 		stor.GaugeMap[gauge.key] = gauge.value
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	// Выборка всех counter метрик
 	rows, err = pg.DB.QueryContext(ctx, "SELECT metric_name, metric_value FROM counter")
@@ -176,10 +179,13 @@ func (pg PgStorage) GetAllMetrics(ctx context.Context) (any, error) {
 		}
 		stor.CounterMap[counter.key] = counter.value
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return stor, nil
 }
 
-func (p PgStorage) Close() error {
-	return p.DB.Close()
+func (pg PgStorage) Close() error {
+	return pg.DB.Close()
 }
