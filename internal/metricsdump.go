@@ -40,7 +40,7 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 
 // Load функция чтения дампа метрик из файла. Применимо только для memstorage
 // func Load(_ context.Context, store handlers.Storager, fname string) error {
-func Load(store handlers.Storager, fname string) error {
+func Load(store *handlers.Storager, fname string) error {
 
 	// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
 	var memStore memstorage.MemStorage
@@ -55,7 +55,7 @@ func Load(store handlers.Storager, fname string) error {
 		log.Println("Load. Error unmarshalling from file")
 		return err
 	}
-	store = memStore
+	*store = memStore
 	log.Println("storage from Load:", store)
 	return nil
 }

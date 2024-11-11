@@ -105,8 +105,8 @@ func main() {
 	// делаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
 
-	if initconf.Conf.Restore {
-		if err := internal.Load(store, initconf.Conf.FileStoragePath); err != nil {
+	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.Restore {
+		if err := internal.Load(&store, initconf.Conf.FileStoragePath); err != nil {
 			log.Println("Error in initial dump load:", err)
 		}
 	}
