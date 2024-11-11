@@ -25,8 +25,7 @@ import (
 // Для возможности использования Zap
 var sugar zap.SugaredLogger
 
-// task функция для старта дампа метрик на диск
-// func task(ctx context.Context, interval int, store *memstorage.MemStorage) {
+// task функция для старта дампа метрик на диск раз в interval секунд
 func task(ctx context.Context, interval int, store handlers.Storager) {
 	// запускаем бесконечный цикл
 	for {
@@ -49,6 +48,46 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 }
 
 var ctx, ctxPG, ctxDUMP context.Context
+
+// storeInit функция инициализации store. В зависимости от настроек (env, флаги) будет либо
+// 1. создан memstorage восстановлением из dump-а
+// 2. при ошибке в п.1 -- создан новый memstorage
+// 3. если определена переменная DatabaseDSN -- будет создан store типа pgstorage
+func storeInit(ctx context.Context) (handlers.Storager, error) {
+	var err error
+	//var store handlers.Storager
+	if initconf.Conf.DatabaseDSN == "" {
+		// если определена опция восстановления store из дампа
+		if initconf.Conf.Restore {
+			log.Println("DatabaseDSN is not configured, Load metric dump from file")
+			store, err := internal.Load(initconf.Conf.FileStoragePath)
+			log.Println("Metric after dump load :", store)
+			if err == nil {
+				return store, nil
+			} else {
+				log.Println("storeInit error in initial dump load:", err, " Trying to initialize new memstorage.")
+			}
+			// Store Инициализация хранилища метрик
+		}
+		store, err = memstorage.New(ctx)
+		if err != nil {
+			log.Println("storeInit error memstorage initialization.")
+			panic(err)
+		}
+		return store, nil
+	}
+
+	if initconf.Conf.DatabaseDSN != "" {
+		log.Println("storeInit DatabaseDSN is configured, start to initialize pgstorage.")
+		store, err = pgstorage.New(ctx)
+		if err != nil {
+			log.Println("storeInit error pgstorage initialization.")
+			panic(err)
+		}
+	}
+	return store, nil
+}
+
 var cancel, cancelPG, cancelDUMP context.CancelFunc
 var store handlers.Storager
 
@@ -56,6 +95,7 @@ func main() {
 
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
+	var err error
 
 	// Config initialization
 	if err := initconf.InitConfig(&initconf.Conf); err != nil {
@@ -64,36 +104,43 @@ func main() {
 	}
 	log.Println("initconf is:", initconf.Conf)
 
-	var err error
-	if initconf.Conf.DatabaseDSN == "" {
-		// если определена опция восстановления store из дампа
-		if initconf.Conf.Restore {
-			//store, err = internal.Load(&store, initconf.Conf.FileStoragePath)
-			log.Println("DatabaseDSN is not configured, Load metric dump from file")
-			store, err = internal.Load(initconf.Conf.FileStoragePath)
-			log.Println("Metric after dump load :", store)
-			if err != nil {
-				log.Println("Error in initial dump load:", err)
-			}
-		} else {
-			// Store Инициализация хранилища метрик
-			store, err = memstorage.New(ctx)
-			if err != nil {
-				log.Println("Error memstorage initialization.")
-				panic(err)
-			}
-		}
-	}
-	if initconf.Conf.DatabaseDSN != "" {
-		store, err = pgstorage.New(ctx)
-		if err != nil {
-			log.Println("Error pgstorage initialization.")
-			panic(err)
-		}
+	// store initialization
+	if store, err = storeInit(ctx); err != nil {
+		log.Println("Storage initialization error :", err)
+		panic(err)
 	}
 
 	defer store.Close()
 
+	//var err error
+	//if initconf.Conf.DatabaseDSN == "" {
+	//	// если определена опция восстановления store из дампа
+	//	if initconf.Conf.Restore {
+	//		//store, err = internal.Load(&store, initconf.Conf.FileStoragePath)
+	//		log.Println("DatabaseDSN is not configured, Load metric dump from file")
+	//		store, err = internal.Load(initconf.Conf.FileStoragePath)
+	//		log.Println("Metric after dump load :", store)
+	//		if err != nil {
+	//			log.Println("Error in initial dump load:", err)
+	//		}
+	//	} else {
+	//		// Store Инициализация хранилища метрик
+	//		store, err = memstorage.New(ctx)
+	//		if err != nil {
+	//			log.Println("Error memstorage initialization.")
+	//			panic(err)
+	//		}
+	//	}
+	//}
+	//if initconf.Conf.DatabaseDSN != "" {
+	//	store, err = pgstorage.New(ctx)
+	//	if err != nil {
+	//		log.Println("Error pgstorage initialization.")
+	//		panic(err)
+	//	}
+	//}
+
+	// Сохранение дампа memstorage при остановке
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
@@ -113,7 +160,7 @@ func main() {
 		panic(err)
 	}
 	defer logger.Sync()
-	// делаем регистратор SugaredLogger
+	// создаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
 
 	//if initconf.Conf.DatabaseDSN == "" && initconf.Conf.Restore {
@@ -158,7 +205,7 @@ func main() {
 		}
 	*/
 
-	//if initconf.Conf.StoreMetricInterval != 0 {
+	// Если не определен DatabaseDSN и StoreMetricInterval не равен нулю -- запускается автодамп memstprage
 	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения
 		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
