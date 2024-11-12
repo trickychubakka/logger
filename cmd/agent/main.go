@@ -30,12 +30,15 @@ func run(myMetrics internal.MetricsStorage) {
 			log.Println("first run. Starting PingServer")
 			_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
 			if err != nil {
-				log.Println(err)
+				log.Println("run: error in PingServer :", err)
 			}
 		}
 		firstRun = false
 
-		if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
+		//if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
+		//	log.Println("Error main in SendMetricsJSON:")
+		log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
+		if err := internal.SendMetricsJSONBatch(&myMetrics, "http://"+conf.address+"/updates"); err != nil {
 			log.Println("Error main in SendMetricsJSON:")
 			log.Println(err)
 		}

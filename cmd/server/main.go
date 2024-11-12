@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"logger/cmd/server/initconf"
-	mygzip "logger/internal/compress"
+	"logger/internal/compress"
 	"logger/internal/handlers"
 	"logger/internal/logging"
 	"os"
@@ -47,12 +47,14 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 	}
 }
 
+// Контексты: родительский, контекст postgres, контекст DUMP-а
 var ctx, ctxPG, ctxDUMP context.Context
+var cancel, cancelPG, cancelDUMP context.CancelFunc
 
 // storeInit функция инициализации store. В зависимости от настроек (env, флаги) будет либо
 // 1. создан memstorage восстановлением из dump-а
 // 2. при ошибке в п.1 -- создан новый memstorage
-// 3. если определена переменная DatabaseDSN -- будет создан store типа pgstorage
+// 3. если определена переменная DatabaseDSN -- создан store типа pgstorage
 func storeInit(ctx context.Context) (handlers.Storager, error) {
 	var err error
 	//var store handlers.Storager
@@ -67,8 +69,8 @@ func storeInit(ctx context.Context) (handlers.Storager, error) {
 			} else {
 				log.Println("storeInit error in initial dump load:", err, " Trying to initialize new memstorage.")
 			}
-			// Store Инициализация хранилища метрик
 		}
+		// Store Инициализация хранилища метрик типа memstorage
 		store, err = memstorage.New(ctx)
 		if err != nil {
 			log.Println("storeInit error memstorage initialization.")
@@ -76,7 +78,7 @@ func storeInit(ctx context.Context) (handlers.Storager, error) {
 		}
 		return store, nil
 	}
-
+	// Инициализация хранилища метрик типа pgstorage
 	if initconf.Conf.DatabaseDSN != "" {
 		log.Println("storeInit DatabaseDSN is configured, start to initialize pgstorage.")
 		store, err = pgstorage.New(ctx)
@@ -88,14 +90,16 @@ func storeInit(ctx context.Context) (handlers.Storager, error) {
 	return store, nil
 }
 
-var cancel, cancelPG, cancelDUMP context.CancelFunc
 var store handlers.Storager
+var err error
 
 func main() {
+	// Изменение режима работы GIN
+	//gin.SetMode(gin.ReleaseMode)
 
+	// Parent context
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
-	var err error
 
 	// Config initialization
 	if err := initconf.InitConfig(&initconf.Conf); err != nil {
@@ -109,36 +113,7 @@ func main() {
 		log.Println("Storage initialization error :", err)
 		panic(err)
 	}
-
 	defer store.Close()
-
-	//var err error
-	//if initconf.Conf.DatabaseDSN == "" {
-	//	// если определена опция восстановления store из дампа
-	//	if initconf.Conf.Restore {
-	//		//store, err = internal.Load(&store, initconf.Conf.FileStoragePath)
-	//		log.Println("DatabaseDSN is not configured, Load metric dump from file")
-	//		store, err = internal.Load(initconf.Conf.FileStoragePath)
-	//		log.Println("Metric after dump load :", store)
-	//		if err != nil {
-	//			log.Println("Error in initial dump load:", err)
-	//		}
-	//	} else {
-	//		// Store Инициализация хранилища метрик
-	//		store, err = memstorage.New(ctx)
-	//		if err != nil {
-	//			log.Println("Error memstorage initialization.")
-	//			panic(err)
-	//		}
-	//	}
-	//}
-	//if initconf.Conf.DatabaseDSN != "" {
-	//	store, err = pgstorage.New(ctx)
-	//	if err != nil {
-	//		log.Println("Error pgstorage initialization.")
-	//		panic(err)
-	//	}
-	//}
 
 	// Сохранение дампа memstorage при остановке
 	c := make(chan os.Signal, 1)
@@ -162,12 +137,6 @@ func main() {
 	defer logger.Sync()
 	// создаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
-
-	//if initconf.Conf.DatabaseDSN == "" && initconf.Conf.Restore {
-	//	if err := internal.Load(&store, initconf.Conf.FileStoragePath); err != nil {
-	//		log.Println("Error in initial dump load:", err)
-	//	}
-	//}
 
 	/*
 		// PostgreSQL Store инициализация
@@ -205,7 +174,7 @@ func main() {
 		}
 	*/
 
-	// Если не определен DatabaseDSN и StoreMetricInterval не равен нулю -- запускается автодамп memstprage
+	// Если не определен DatabaseDSN и StoreMetricInterval не равен нулю -- запускается автодамп memstorage
 	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения
 		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
@@ -218,9 +187,7 @@ func main() {
 
 	sugar.Infow("initConfig sugar logging", "conf.RunAddr", initconf.Conf.RunAddr)
 
-	// Изменение режима работы GIN
-	//gin.SetMode(gin.ReleaseMode)
-
+	// Если определена опция Logfile -- логи сервера перенаправляются в этот файл
 	if initconf.Conf.Logfile != "" {
 		file, err := os.OpenFile("server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
@@ -230,6 +197,7 @@ func main() {
 		defer file.Close()
 	}
 
+	// Тест коннекта к базе
 	log.Println("TEST Connecting to base")
 	db := database.Postgresql{}
 	err = db.Connect()
@@ -238,19 +206,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// GIN init
 	router := gin.Default()
 
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
 
-	router.Use(mygzip.GzipRequestHandle)
-	//router.Use(mygzip.GzipResponseHandle(compress.DefaultCompression))
+	router.Use(compress.GzipRequestHandle)
+	//router.Use(compress.GzipResponseHandle(compress.DefaultCompression))
 	if initconf.Conf.DatabaseDSN == "" {
 		router.Use(internal.SyncDumpUpdate(ctx, store))
 	}
 	router.GET("/", handlers.GetAllMetrics(ctx, store))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(ctx, store))
 	router.POST("/update", handlers.MetricHandlerJSON(ctx, store))
+	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
 	router.POST("/value", handlers.GetMetricJSON(ctx, store))
 	router.GET("/ping", handlers.DBPing(db.DB))

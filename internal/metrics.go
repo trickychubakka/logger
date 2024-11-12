@@ -28,7 +28,7 @@ func NewMetricsStorageObj() MetricsStorage {
 }
 
 // MetricsPolling -- заполнение словаря метрик перебором всех полей структуры MemStats через reflect
-// с выбором метрик небходимых типов
+// с выбором метрик необходимых типов
 func MetricsPolling(metrics *MetricsStorage) error {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
@@ -68,7 +68,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		zb := gzip.NewWriter(&buf)
 
 		if _, err := zb.Write(b); err != nil {
-			log.Println("SendRequest. Error gzipping body:", err)
+			log.Println("SendRequest. Error gzip body:", err)
 			return nil, err
 		}
 
@@ -149,10 +149,10 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 }
 
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
+	ID    string   `json:"id"`              // Имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
 }
 
 func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
@@ -201,7 +201,89 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 	return nil
 }
 
-// PingServer -- функция пинга сервера для решения проблемы metrictests
+func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
+	var metrics []Metrics
+	var tmpMetric Metrics
+	for k, v := range store.gaugeMap {
+		log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
+		tmpMetric.ID = k
+		tmpMetric.MType = "gauge"
+		tmpMetric.Value = &v
+		metrics = append(metrics, tmpMetric)
+	}
+	for k, v := range store.counterMap {
+		tmpMetric.ID = k
+		tmpMetric.MType = "counter"
+		tmpMetric.Delta = &v
+		metrics = append(metrics, tmpMetric)
+	}
+	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
+	return metrics, nil
+}
+
+func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
+	tmpMetrics, err := MemstorageToMetrics(*metrics)
+	if err != nil {
+		log.Println("Error in SendMetricsJSONBatch:", err)
+		return err
+	}
+	payload, err := json.Marshal(tmpMetrics)
+	if err != nil {
+		log.Println("SendMetricsJSONBatch error in json.Marshal: ", err)
+	}
+	log.Println("payload in SendMetricsJSONBatch is:", string(payload))
+
+	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+	if err != nil {
+		log.Println("SendMetricsJSONBatch: Error Send Metrics in SendRequest call:", err)
+		return err
+	}
+	defer response.Body.Close()
+
+	//// Цикл для отсылки метрик типа gaugeMap
+	//for m := range metrics.gaugeMap {
+	//	count++
+	//	log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "JSON count:", count)
+	//	valGauge := metrics.gaugeMap[m]
+	//	var tmpMetric = Metrics{m, "gauge", nil, &valGauge}
+	//
+	//	payload, err := json.Marshal(tmpMetric)
+	//	log.Println("payload in SendMetrics is:", string(payload))
+	//	if err != nil {
+	//		return err
+	//	}
+	//	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+	//	if err != nil {
+	//		log.Println("Error Send Metrics in SendRequest call:", err)
+	//		return err
+	//	}
+	//	defer response.Body.Close()
+	//}
+	//
+	//// Цикл для отсылки метрик типа counterMap
+	//for m := range metrics.counterMap {
+	//	count++
+	//	log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "JSON count:", count)
+	//	valCounter := metrics.counterMap[m]
+	//	var tmpMetric = Metrics{m, "counter", &valCounter, nil}
+	//
+	//	payload, err := json.Marshal(tmpMetric)
+	//	if err != nil {
+	//		return err
+	//	}
+	//
+	//	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+	//
+	//	if err != nil {
+	//		log.Println("Error in SendMetricsJSON from SendRequest", err)
+	//		return err
+	//	}
+	//	defer response.Body.Close()
+	//}
+	return nil
+}
+
+// PingServer -- функция ping-а сервера для решения проблемы metricstests
 func PingServer(url string, contentType string) (*http.Response, error) {
 	log.Println("PING SERVER with url", url)
 	var tmpVar int64

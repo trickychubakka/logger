@@ -8,6 +8,7 @@ import (
 	"log"
 	"logger/conf"
 	"logger/internal/database"
+	"logger/internal/storage"
 )
 
 // PgStorage postgresql хранилище для метрик. Разные map-ы для разных типов метрик
@@ -15,6 +16,13 @@ type PgStorage struct {
 	Cfg *conf.Config
 	//ConnStr string
 	DB *sql.DB
+}
+
+type Metrics struct {
+	ID    string   `json:"id"`              // Имя метрики
+	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
 }
 
 //type PgStorage database.Postgresql
@@ -75,6 +83,50 @@ func (pg PgStorage) UpdateCounter(ctx context.Context, key string, value int64) 
 		log.Fatal("Error PG update counter:", err)
 	}
 	return nil
+}
+
+// UpdateBatch функция update метрик, принятых в теле запроса в виде []Metrics
+func (pg PgStorage) UpdateBatch(ctx context.Context, metrics []storage.Metrics) error {
+	log.Println("UpdatePGBatch: Start Update batch")
+	if len(metrics) == 0 {
+		log.Println("UpdatePGBatch: No metrics to update im []Metrics")
+		return nil
+	}
+	tx, err := pg.DB.BeginTx(ctx, nil)
+	if err != nil {
+		log.Println("UpdatePGBatch: Error begin transaction:", err)
+		return err
+	}
+	for _, metric := range metrics {
+		if metric.MType == "gauge" {
+			_, err := tx.ExecContext(ctx, "INSERT INTO gauge (metric_name, metric_value) VALUES($1,$2)"+
+				" ON CONFLICT(metric_name)"+
+				" DO UPDATE SET metric_name = $1, metric_value = $2", metric.ID, metric.Value)
+			if err != nil {
+				log.Println("UpdatePGBatch Error update gauge:", err)
+				if err := tx.Rollback(); err != nil {
+					log.Println("UpdatePGBatch. Error rollback:", err)
+				}
+				return err
+			}
+		}
+		if metric.MType == "counter" {
+			log.Println("UpdateBatch: PG update counter metric.ID", metric.ID, " by value :", *metric.Delta)
+			_, err := tx.ExecContext(ctx, "INSERT INTO counter (metric_name, metric_value) VALUES($1,$2)"+
+				" ON CONFLICT(metric_name)"+
+				" DO UPDATE SET "+
+				"metric_value = (SELECT metric_value FROM counter WHERE metric_name = $1) + $2", metric.ID, metric.Delta)
+			if err != nil {
+				log.Println("UpdatePGBatch: Error update counter:", err)
+				if err := tx.Rollback(); err != nil {
+					log.Println("UpdatePGBatch: Error rollback:", err)
+				}
+				return err
+			}
+		}
+	}
+	log.Println("UpdatePGBatch: End Update batch")
+	return tx.Commit()
 }
 
 func (pg PgStorage) GetGauge(ctx context.Context, key string) (float64, error) {

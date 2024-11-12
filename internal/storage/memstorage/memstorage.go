@@ -3,6 +3,8 @@ package memstorage
 import (
 	"context"
 	"errors"
+	"log"
+	"logger/internal/storage"
 )
 
 // MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик
@@ -28,9 +30,28 @@ func (ms MemStorage) UpdateCounter(_ context.Context, key string, value int64) e
 	return nil
 }
 
+func (ms MemStorage) UpdateBatch(_ context.Context, metrics []storage.Metrics) error {
+	log.Println("UpdateBatch. Start Update batch, storage now is :", ms)
+	if len(metrics) == 0 {
+		log.Println("UpdateBatch. No metrics to update im []Metrics")
+		return nil
+	}
+	for _, metric := range metrics {
+		switch metric.MType {
+		case "gauge":
+			ms.GaugeMap[metric.ID] = *metric.Value
+		case "counter":
+			log.Println("UpdateBatch: memstorage update counter ", metric.ID, "value, before:", ms.CounterMap[metric.ID], "updating with delta :", *metric.Delta)
+			ms.CounterMap[metric.ID] += *metric.Delta
+			log.Println("UpdateBatch: memstorage update counter value, after:", ms.CounterMap[metric.ID])
+		}
+	}
+	log.Println("UpdateBatch. End Update batch")
+	return nil
+}
+
 func (ms MemStorage) GetGauge(_ context.Context, key string) (float64, error) {
 	val, ok := ms.GaugeMap[key]
-	//log.Println("GetGauge key:", key, "val:", val, "ok:", ok)
 	if !ok {
 		return 0, errors.New("no value for key " + key)
 	}

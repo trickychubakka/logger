@@ -11,6 +11,8 @@ import (
 	"io"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/internal/storage"
+	"logger/internal/storage/memstorage"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,16 +26,17 @@ const (
 	metricValue = 3
 )
 
-type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
-	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-}
+//type Metrics struct {
+//	ID    string   `json:"id"`              // Имя метрики
+//	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter
+//	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
+//	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
+//}
 
 type Storager interface {
 	UpdateGauge(ctx context.Context, key string, value float64) error
 	UpdateCounter(ctx context.Context, key string, value int64) error
+	UpdateBatch(ctx context.Context, metrics []storage.Metrics) error
 	GetGauge(ctx context.Context, key string) (float64, error)
 	GetCounter(ctx context.Context, key string) (int64, error)
 	GetValue(ctx context.Context, t string, key string) (any, error)
@@ -54,6 +57,21 @@ func urlToMap(url string) ([]string, error) {
 		return splittedURL, errors.New("URL is too long")
 	}
 	return splittedURL, nil
+}
+
+// func MetricsToMemstorage(ctx context.Context, metrics []Metrics) (memstorage.MemStorage, error) {
+func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memstorage.MemStorage, error) {
+	stor, _ := memstorage.New(ctx)
+	for _, m := range metrics {
+		switch m.MType {
+		case "gauge":
+			stor.GaugeMap[m.ID] = *m.Value
+		case "counter":
+			stor.CounterMap[m.ID] = *m.Delta
+		}
+	}
+	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> stor :", stor)
+	return stor, nil
 }
 
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
@@ -111,7 +129,7 @@ func MetricHandlerJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 		}
 
 		//var tmpMetric internal.Metrics
-		var tmpMetric Metrics
+		var tmpMetric storage.Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
@@ -168,6 +186,60 @@ func MetricHandlerJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
+// MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jsn, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			http.Error(c.Writer, "MetricHandlerBatchUpdate: Error in json body read", http.StatusInternalServerError)
+			return
+		}
+
+		//var tmpMetric internal.Metrics
+		var tmpMetrics []storage.Metrics
+
+		err = json.Unmarshal(jsn, &tmpMetrics)
+		if err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in json.Unmarshal", err, "jsn is:", string(jsn))
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		log.Println("MetricHandlerBatchUpdate: Requested JSON batch metric UPDATES with next []metric", tmpMetrics)
+
+		//store, err := MetricsToMemstorage(ctx, tmpMetrics)
+		//if err != nil {
+		//	log.Println("MetricHandlerBatchUpdate Error in MetricsToMemstorage:", err)
+		//	return
+		//}
+		//
+		log.Println("MetricHandlerBatchUpdate: tmpMetrics : ", tmpMetrics, " -> store :", store)
+
+		j2 := io.NopCloser(bytes.NewBuffer(jsn))
+		log.Println("MetricHandlerBatchUpdate: Request from j2:", j2)
+
+		log.Println("MetricHandlerBatchUpdate. Starting storage batch update. Store before update is :", store)
+		if err := store.UpdateBatch(ctx, tmpMetrics); err != nil {
+			log.Println("MetricHandlerBatchUpdate. Error in UpdateBatch:", err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		resp, err := json.Marshal(store)
+		if err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in json.Marshal in handlers:", err)
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Header("content-type", "application/json")
+		c.Status(http.StatusOK)
+
+		if _, err := c.Writer.Write(resp); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Writer.Write error:", err)
+		}
+	}
+}
+
 // GetAllMetrics получить все метрики
 func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -218,7 +290,7 @@ func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 		}
 
 		//var tmpMetric internal.Metrics
-		var tmpMetric Metrics
+		var tmpMetric storage.Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
