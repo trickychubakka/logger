@@ -41,7 +41,7 @@ func pgErrorRetriable(err error) bool {
 			log.Println("PostgreSQL error : IsConnectionException is true.")
 			return true
 		}
-		// TODO For test only! Неправильная таблица в запросе.
+		// For test only! Неправильная таблица в запросе.
 		if pgerrcode.IsSyntaxErrororAccessRuleViolation(pgErr.Code) {
 			log.Println("PostgreSQL error : SyntaxErrororAccessRuleViolation is true.")
 			return true
@@ -74,7 +74,7 @@ func pgWrapper(f func(ctx context.Context, query string, args ...any) (sql.Resul
 			if err != nil {
 				//log.Println("pg.Wrapper RetriableError: attempt ", i+1, " error")
 				if i == 2 {
-					log.Panicf("%s %w", "pg.Wrapper RetriableError: Panic in wrapped function:", err)
+					log.Panicf("%s %v", "pg.Wrapper RetriableError: Panic in wrapped function:", err)
 				}
 				continue
 			}
@@ -84,7 +84,7 @@ func pgWrapper(f func(ctx context.Context, query string, args ...any) (sql.Resul
 	}
 	// Если ошибка non-retriable
 	if err != nil {
-		log.Panicf("%s %w", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
+		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
 	}
 	// Если ошибки нет
 	return nil
@@ -93,7 +93,7 @@ func pgWrapper(f func(ctx context.Context, query string, args ...any) (sql.Resul
 func New(ctx context.Context) (PgStorage, error) {
 	pg := database.Postgresql{}
 	log.Println("Connecting to database ...", pg)
-	err := pg.Connect()
+	_ = pg.Connect()
 
 	//if err != nil {
 	//	for i, t := range [3]int{1, 3, 5} {
@@ -103,7 +103,7 @@ func New(ctx context.Context) (PgStorage, error) {
 	//		if err != nil {
 	//			log.Println("pg.Connect: attempt ", i+1, " error")
 	//			if i == 2 {
-	//				log.Panicf("%s %w", "pg.Connect: Panic, creating New PgStorage:", err)
+	//				log.Panicf("%s %v", "pg.Connect: Panic, creating New PgStorage:", err)
 	//			}
 	//			continue
 	//		}
@@ -127,7 +127,7 @@ func New(ctx context.Context) (PgStorage, error) {
     	"metric_name" TEXT PRIMARY KEY, 
     	"metric_value" double precision
     	)`
-	err = pgWrapper(pg.DB.ExecContext, ctx, sqlQuery)
+	err := pgWrapper(pg.DB.ExecContext, ctx, sqlQuery)
 	if err != nil {
 		log.Fatal("Error creating table gauge:", err)
 	}
@@ -291,7 +291,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 			if row.Err() != nil {
 				//log.Println("pgQueryWrapper RetriableError: attempt ", i+1, " error")
 				if i == 2 {
-					log.Panicf("%s %w", "pgQueryWrapper RetriableError: Panic in wrapped function:", row.Err())
+					log.Panicf("%s %v", "pgQueryWrapper RetriableError: Panic in wrapped function:", row.Err())
 				}
 				continue
 			}
@@ -301,7 +301,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 	}
 	// Если ошибка non-retriable
 	if row.Err() != nil {
-		log.Panicf("%s %w", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", row.Err())
+		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", row.Err())
 	}
 	// Если ошибки нет
 	return row
@@ -409,7 +409,7 @@ func pgQueryWrapper(f func(ctx context.Context, query string, args ...any) (*sql
 			rows, err := f(ctx, sqlQuery, args...)
 			if err != nil {
 				if i == 2 {
-					log.Panicf("%s %w", "pgQueryWrapper RetriableError: Panic in wrapped function:", err)
+					log.Panicf("%s %v", "pgQueryWrapper RetriableError: Panic in wrapped function:", err)
 				}
 				continue
 			}
@@ -419,7 +419,7 @@ func pgQueryWrapper(f func(ctx context.Context, query string, args ...any) (*sql
 	}
 	// Если ошибка non-retriable
 	if err != nil {
-		log.Panicf("%s %w", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
+		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
 	}
 	// Если ошибки нет
 	return rows, nil

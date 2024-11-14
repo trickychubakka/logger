@@ -65,7 +65,7 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 			if err != nil {
 				log.Println("Save: attempt ", i+1, " error")
 				if i == 2 {
-					log.Panicf("%s %w", "Save: Panic, creating New PgStorage:", err)
+					log.Panicf("%s %v", "Save: Panic, creating New PgStorage:", err)
 				}
 				continue
 			}
