@@ -138,42 +138,6 @@ func main() {
 	// создаем регистратор SugaredLogger
 	sugar = *logger.Sugar()
 
-	/*
-		// PostgreSQL Store инициализация
-		ctxPG, cancelPG = context.WithCancel(ctx)
-		defer cancelPG()
-		pgStore, err := pgstorage.New(ctxPG)
-		if err != nil {
-			log.Println("pgstorage package error in New():", err)
-		}
-		log.Println("pgStore initialization:", pgStore)
-		//ctx := context.Background()
-		pgStore.UpdateGauge(ctxPG, "value1", 2.3)
-		pgStore.UpdateCounter(ctxPG, "value2", 3)
-		if tmp, err := pgStore.GetGauge(ctxPG, "value1"); err == nil {
-			log.Println("PG GetGauge(value1) :", tmp)
-		} else {
-			log.Println("PG GetGauge(value1) error:", err)
-		}
-		if tmp, err := pgStore.GetCounter(ctxPG, "value2"); err == nil {
-			log.Println("PG GetCounter(value2) :", tmp)
-		}
-		if tmp, err := pgStore.GetValue(ctxPG, "counter", "value2"); err == nil {
-			log.Println("pgStore.GetValue(counter, value2) :", tmp)
-		}
-		if tmp, err := pgStore.GetValue(ctxPG, "gauge", "value1"); err == nil {
-			log.Println("pgStore.GetValue(gauge, value1) :", tmp)
-		}
-		if tmp, err := pgStore.GetValue(ctx, "gauge", "errmetric"); err != nil {
-			log.Println("pgStore.GetValue(gauge, errmetric) :", tmp, "Error:", err)
-		}
-		if m, err := pgStore.GetAllMetrics(ctxPG); err == nil {
-			log.Println("pgStore.GetAllMetrics():", m)
-		} else {
-			log.Println("pgStore.GetAllMetrics() error:", err)
-		}
-	*/
-
 	// Если не определен DatabaseDSN и StoreMetricInterval не равен нулю -- запускается автодамп memstorage
 	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения

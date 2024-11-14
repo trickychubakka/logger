@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"time"
 )
 
 type MetricsStorage struct {
@@ -100,14 +101,36 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 	response, err := client.Do(req)
 
-	if response != nil {
-		log.Println("response is:", response)
-		defer response.Body.Close()
-	} else if err != nil {
-		log.Println("WARNING!!!!!", err, "; response is", response)
-		panic(err)
-	}
+	//if response != nil {
+	//	log.Println("SendRequest: response is:", response)
+	//	defer response.Body.Close()
+	if err != nil {
 
+		for i, t := range [3]int{1, 3, 5} {
+			log.Println("SendRequest. Trying to recover after ", t, "seconds, attempt number ", i+1)
+			time.Sleep(time.Duration(t) * time.Second)
+			response, err = client.Do(req)
+			if err != nil {
+				log.Println("SendRequest: attempt ", i+1, " error")
+				if i == 2 {
+					//fmt.Errorf("%s %w", "SendRequest: PANIC in SendRequest.", err)
+					////log.Println("SendRequest: PANIC in SendRequest. Error is:", err, "; response is", response)
+					////panic(err)
+					//log.Println(fmt.Errorf("%s %w", "SendRequest: Error in SendRequest.", err))
+					////panic(fmt.Errorf("%s %w", "SendRequest: PANIC in SendRequest.", err))
+					return nil, fmt.Errorf("%s %w", "SendRequest: Error in SendRequest.", err)
+				}
+				continue
+			}
+			return response, nil
+		}
+		//log.Println("SendRequest: WARNING!!!!!", err, "; response is", response)
+		//panic(err)
+	}
+	if response != nil {
+		log.Println("SendRequest: response is:", response)
+		defer response.Body.Close()
+	}
 	return response, nil
 }
 
@@ -235,7 +258,7 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
 
 	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
 	if err != nil {
-		log.Println("SendMetricsJSONBatch: Error Send Metrics in SendRequest call:", err)
+		log.Println("SendMetricsJSONBatch: Error from SendRequest call:", err)
 		return err
 	}
 	defer response.Body.Close()
