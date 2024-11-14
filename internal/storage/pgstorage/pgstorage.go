@@ -29,7 +29,7 @@ type Metrics struct {
 }
 
 // Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
-//timeouts := [3]int{1, 3, 5}
+var timeoutsRetryConst = [3]int{1, 3, 5}
 
 //type PgStorage database.Postgresql
 
@@ -67,7 +67,7 @@ func pgWrapper(f func(ctx context.Context, query string, args ...any) (sql.Resul
 	_, err := f(ctx, sqlQuery, args...)
 	// Если ошибка retriable
 	if pgErrorRetriable(err) {
-		for i, t := range [3]int{1, 3, 5} {
+		for i, t := range timeoutsRetryConst {
 			log.Println("pg.Wrapper, RetriableError: Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			_, err := f(ctx, sqlQuery, args...)
@@ -96,7 +96,7 @@ func New(ctx context.Context) (PgStorage, error) {
 	_ = pg.Connect()
 
 	//if err != nil {
-	//	for i, t := range [3]int{1, 3, 5} {
+	//	for i, t := range timeoutsRetryConst {
 	//		log.Println("pg.Connect: Trying to recover after ", t, "seconds, attempt number ", i+1)
 	//		time.Sleep(time.Duration(t) * time.Second)
 	//		err := pg.Connect()
@@ -284,7 +284,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 	row := f(ctx, sqlQuery, args...)
 	// Если ошибка retriable
 	if pgErrorRetriable(row.Err()) {
-		for i, t := range [3]int{1, 3, 5} {
+		for i, t := range timeoutsRetryConst {
 			log.Println("pg.Wrapper, RetriableError: Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			row := f(ctx, sqlQuery, args...)
@@ -403,7 +403,7 @@ func pgQueryWrapper(f func(ctx context.Context, query string, args ...any) (*sql
 	rows, err := f(ctx, sqlQuery, args...)
 	// Если ошибка retriable
 	if pgErrorRetriable(err) {
-		for i, t := range [3]int{1, 3, 5} {
+		for i, t := range timeoutsRetryConst {
 			log.Println("pg.Wrapper, RetriableError: Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			rows, err := f(ctx, sqlQuery, args...)

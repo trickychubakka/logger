@@ -16,6 +16,9 @@ type Storager interface {
 	GetAllMetrics(ctx context.Context) (any, error)
 }
 
+// Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
+var timeoutsRetryConst = [3]int{1, 3, 5}
+
 // Save функция сохранения дампа метрик в файл.
 func SaveOLD(ctx context.Context, store handlers.Storager, fname string) error {
 	// сериализуем структуру в JSON формат
@@ -58,7 +61,8 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 
 	if err != nil {
 		log.Println("Save. Error os.WriteFile")
-		for i, t := range [3]int{1, 3, 5} {
+		//for i, t := range [3]int{1, 3, 5} {
+		for i, t := range timeoutsRetryConst {
 			log.Println("Save: Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			err := os.WriteFile(fname, data, 0666)
