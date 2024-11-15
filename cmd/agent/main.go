@@ -26,7 +26,6 @@ func run(myMetrics internal.MetricsStorage) {
 			log.Println("\nmetrics:", myMetrics)
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
-		//
 		//	if firstRun {
 		//		log.Println("first run. Starting PingServer")
 		//		_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
