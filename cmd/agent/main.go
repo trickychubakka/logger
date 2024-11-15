@@ -67,14 +67,14 @@ func main() {
 
 	myMetrics := internal.NewMetricsStorageObj()
 
-	//defer func() {
-	//	if p := recover(); p != nil {
-	//		err := fmt.Errorf("%v", p)
-	//		log.Println("Panic recovering -> main:", err)
-	//		log.Println("recovered from panic in main")
-	//	}
-	//	run(myMetrics)
-	//}()
+	defer func() {
+		if p := recover(); p != nil {
+			err := fmt.Errorf("%v", p)
+			log.Println("Panic recovering -> main:", err)
+			log.Println("recovered from panic in main")
+		}
+		run(myMetrics)
+	}()
 
 	run(myMetrics)
 }

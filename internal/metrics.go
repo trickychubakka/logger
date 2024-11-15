@@ -112,13 +112,14 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			response, err = client.Do(req)
 			if err != nil {
 				log.Println("SendRequest: attempt ", i+1, " error")
+				log.Println("CHANGED")
 				if i == 2 {
-					//fmt.Errorf("%s %w", "SendRequest: PANIC in SendRequest.", err)
+
 					////log.Println("SendRequest: PANIC in SendRequest. Error is:", err, "; response is", response)
 					////panic(err)
-					//log.Println(fmt.Errorf("%s %w", "SendRequest: Error in SendRequest.", err))
-					////panic(fmt.Errorf("%s %w", "SendRequest: PANIC in SendRequest.", err))
-					return nil, fmt.Errorf("%s %w", "SendRequest: Error in SendRequest.", err)
+					//log.Println(fmt.Errorf("%s %v", "SendRequest: Error in SendRequest.", err))
+					panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
+					//return nil, fmt.Errorf("%s %v", "SendRequest: Error in SendRequest.", err)
 				}
 				continue
 			}
