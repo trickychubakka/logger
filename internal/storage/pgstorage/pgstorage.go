@@ -135,7 +135,7 @@ func New(ctx context.Context) (PgStorage, error) {
 	log.Println("creating counter table")
 	sqlQuery = `CREATE TABLE IF NOT EXISTS counter (
         "metric_name" TEXT PRIMARY KEY,
-        "metric_value" INTEGER
+        "metric_value" BIGINT
       )`
 	err = pgWrapper(pg.DB.ExecContext, ctx, sqlQuery)
 	if err != nil {
