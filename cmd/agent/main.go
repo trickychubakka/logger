@@ -17,7 +17,6 @@ var FlagTest = false
 // run функция выполнения цикла поллинга метрик
 func run(myMetrics internal.MetricsStorage) {
 
-	//firstRun := true
 	for {
 		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
 			if err := internal.MetricsPolling(&myMetrics); err != nil {
@@ -26,14 +25,6 @@ func run(myMetrics internal.MetricsStorage) {
 			log.Println("\nmetrics:", myMetrics)
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
-		//	if firstRun {
-		//		log.Println("first run. Starting PingServer")
-		//		_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
-		//		if err != nil {
-		//			log.Println("run: error in PingServer :", err)
-		//		}
-		//	}
-		//	firstRun = false
 
 		//if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
 		//	log.Println("Error main in SendMetricsJSON:")

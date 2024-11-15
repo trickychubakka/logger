@@ -26,13 +26,6 @@ const (
 	metricValue = 3
 )
 
-//type Metrics struct {
-//	ID    string   `json:"id"`              // Имя метрики
-//	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter
-//	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
-//	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
-//}
-
 type Storager interface {
 	UpdateGauge(ctx context.Context, key string, value float64) error
 	UpdateCounter(ctx context.Context, key string, value int64) error
@@ -59,7 +52,7 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
-// func MetricsToMemstorage(ctx context.Context, metrics []Metrics) (memstorage.MemStorage, error) {
+// MetricsToMemstorage функция конвертации Metrics в Memstorage
 func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memstorage.MemStorage, error) {
 	stor, _ := memstorage.New(ctx)
 	for _, m := range metrics {
@@ -207,12 +200,6 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFu
 
 		log.Println("MetricHandlerBatchUpdate: Requested JSON batch metric UPDATES with next []metric", tmpMetrics)
 
-		//store, err := MetricsToMemstorage(ctx, tmpMetrics)
-		//if err != nil {
-		//	log.Println("MetricHandlerBatchUpdate Error in MetricsToMemstorage:", err)
-		//	return
-		//}
-		//
 		log.Println("MetricHandlerBatchUpdate: tmpMetrics : ", tmpMetrics, " -> store :", store)
 
 		j2 := io.NopCloser(bytes.NewBuffer(jsn))

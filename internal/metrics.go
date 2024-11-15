@@ -101,9 +101,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 	response, err := client.Do(req)
 
-	//if response != nil {
-	//	log.Println("SendRequest: response is:", response)
-	//	defer response.Body.Close()
 	if err != nil {
 
 		for i, t := range [3]int{1, 3, 5} {
@@ -114,19 +111,12 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 				log.Println("SendRequest: attempt ", i+1, " error")
 				log.Println("CHANGED")
 				if i == 2 {
-
-					////log.Println("SendRequest: PANIC in SendRequest. Error is:", err, "; response is", response)
-					////panic(err)
-					//log.Println(fmt.Errorf("%s %v", "SendRequest: Error in SendRequest.", err))
 					panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
-					//return nil, fmt.Errorf("%s %v", "SendRequest: Error in SendRequest.", err)
 				}
 				continue
 			}
 			return response, nil
 		}
-		//log.Println("SendRequest: WARNING!!!!!", err, "; response is", response)
-		//panic(err)
 	}
 	if response != nil {
 		log.Println("SendRequest: response is:", response)
@@ -263,47 +253,6 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
 		return err
 	}
 	defer response.Body.Close()
-
-	//// Цикл для отсылки метрик типа gaugeMap
-	//for m := range metrics.gaugeMap {
-	//	count++
-	//	log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "JSON count:", count)
-	//	valGauge := metrics.gaugeMap[m]
-	//	var tmpMetric = Metrics{m, "gauge", nil, &valGauge}
-	//
-	//	payload, err := json.Marshal(tmpMetric)
-	//	log.Println("payload in SendMetrics is:", string(payload))
-	//	if err != nil {
-	//		return err
-	//	}
-	//	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-	//	if err != nil {
-	//		log.Println("Error Send Metrics in SendRequest call:", err)
-	//		return err
-	//	}
-	//	defer response.Body.Close()
-	//}
-	//
-	//// Цикл для отсылки метрик типа counterMap
-	//for m := range metrics.counterMap {
-	//	count++
-	//	log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "JSON count:", count)
-	//	valCounter := metrics.counterMap[m]
-	//	var tmpMetric = Metrics{m, "counter", &valCounter, nil}
-	//
-	//	payload, err := json.Marshal(tmpMetric)
-	//	if err != nil {
-	//		return err
-	//	}
-	//
-	//	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
-	//
-	//	if err != nil {
-	//		log.Println("Error in SendMetricsJSON from SendRequest", err)
-	//		return err
-	//	}
-	//	defer response.Body.Close()
-	//}
 	return nil
 }
 
