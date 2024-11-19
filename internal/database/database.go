@@ -2,7 +2,7 @@ package database
 
 import "database/sql"
 
-// Database интерфейс для базы данных
+// Database интерфейс для БД
 type Database interface {
 	Connect() error
 	Close() error

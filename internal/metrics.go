@@ -171,7 +171,6 @@ type Metrics struct {
 
 func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 	count := 0
-
 	// Цикл для отсылки метрик типа gaugeMap
 	for m := range metrics.gaugeMap {
 		count++

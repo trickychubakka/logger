@@ -40,7 +40,7 @@ func initConfig(conf *Config) error {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port to run server")
 		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
-		// Для логирования агента в лог файл необходимо определеить флаг -l
+		// Для логирования агента в лог файл необходимо определить флаг -l
 		flag.StringVar(&LogFileFlag, "l", "", "agent log file")
 
 		flag.Parse()

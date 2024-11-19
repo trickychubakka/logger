@@ -19,7 +19,7 @@ import (
 )
 
 // Константа для кодирования смысла полей после парсинга URL на основе их порядкового номера
-// Пример: localhost:8080/update/gauge/metric2/777.4
+// Пример: localhost:8080/update/gauge/metric2/7.4
 const (
 	metricType  = 1
 	metricName  = 2

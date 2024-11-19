@@ -19,7 +19,7 @@ type Storager interface {
 // Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
 var timeoutsRetryConst = [3]int{1, 3, 5}
 
-// Save функция сохранения дампа метрик в файл.
+// SaveOLD функция сохранения дампа метрик в файл.
 func SaveOLD(ctx context.Context, store handlers.Storager, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics(ctx)

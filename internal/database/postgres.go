@@ -21,7 +21,7 @@ func (p *Postgresql) Connect() error {
 	p.Cfg = &conf.Config{}
 
 	var connStr string
-	//connStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", p.conf.Database.User, p.conf.Database.Password, p.conf.Database.Dbname, p.conf.Database.SslMode)
+
 	if initconf.Conf.DatabaseDSN == "" {
 		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
 		viper.SetConfigName("dbconfig")

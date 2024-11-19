@@ -30,7 +30,7 @@ type Metrics struct {
 // Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
 var timeoutsRetryConst = [3]int{1, 3, 5}
 
-// pgErrorRetriable функция определения принадлежности PostgreSQL ошибки к классу retriable
+// pgErrorRetriable функция определения принадлежности PostgreSQL ошибки к классу retriable.
 func pgErrorRetriable(err error) bool {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

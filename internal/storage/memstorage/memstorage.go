@@ -7,7 +7,7 @@ import (
 	"logger/internal/storage"
 )
 
-// MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик
+// MemStorage inmemory хранилище для метрик. Разные map-ы для разных типов метрик.
 type MemStorage struct {
 	GaugeMap   map[string]float64
 	CounterMap map[string]int64
