@@ -93,11 +93,9 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	req.Close = true
 
 	req.Header.Set("Content-Type", contentType)
-	// compress
 	req.Header.Set("Content-Encoding", "compress")
 
 	log.Println("req.Header is:", req.Header)
-
 	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 	response, err := client.Do(req)
 
