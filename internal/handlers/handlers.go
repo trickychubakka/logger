@@ -188,7 +188,6 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFu
 			return
 		}
 
-		//var tmpMetric internal.Metrics
 		var tmpMetrics []storage.Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetrics)
@@ -240,6 +239,9 @@ func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 		c.Status(http.StatusOK)
 		c.IndentedJSON(http.StatusOK, metrics)
 	}
+	c.Header("content-type", "text/html; charset=utf-8")
+	c.Status(http.StatusOK)
+	c.IndentedJSON(http.StatusOK, metrics)
 }
 
 // GetMetric получить значение метрики
