@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -56,7 +57,7 @@ func pgExecWrapper(f func(ctx context.Context, query string, args ...any) (sql.R
 			_, err := f(ctx, sqlQuery, args...)
 			if err != nil {
 				if i == 2 {
-					log.Panicf("%s %v", "pg.Wrapper RetriableError: Panic in wrapped function:", err)
+					return fmt.Errorf("%s %v", "pg.Wrapper RetriableError: Panic in wrapped function:", err)
 				}
 				continue
 			}
@@ -66,7 +67,7 @@ func pgExecWrapper(f func(ctx context.Context, query string, args ...any) (sql.R
 	}
 	// Если ошибка non-retriable
 	if err != nil {
-		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
+		return fmt.Errorf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
 	}
 	// Если ошибки нет
 	return nil
@@ -105,7 +106,7 @@ func (pg PgStorage) UpdateGauge(ctx context.Context, key string, value float64) 
 	sqlQuery := "INSERT INTO gauge (metric_name, metric_value) VALUES($1,$2) ON CONFLICT(metric_name) DO UPDATE SET metric_name = $1, metric_value = $2"
 	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
-		log.Fatal("Error PG update gauge:", err)
+		return fmt.Errorf("Error PG update gauge:", err)
 	}
 	return nil
 }
@@ -118,7 +119,7 @@ func (pg PgStorage) UpdateCounter(ctx context.Context, key string, value int64) 
 		"metric_value = (SELECT metric_value FROM counter WHERE metric_name = $1) + $2"
 	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
-		log.Fatal("Error PG update counter:", err)
+		return fmt.Errorf("Error PG update counter:", err)
 	}
 	return nil
 }
@@ -180,7 +181,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 			row := f(ctx, sqlQuery, args...)
 			if row.Err() != nil {
 				if i == 2 {
-					log.Panicf("%s %v", "pgQueryWrapper RetriableError: Panic in wrapped function:", row.Err())
+					log.Println("pgQueryWrapper RetriableError: Panic in wrapped function:", row.Err())
 				}
 				continue
 			}
@@ -190,7 +191,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 	}
 	// Если ошибка non-retriable
 	if row.Err() != nil {
-		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", row.Err())
+		log.Println("pg.Wrapper Non-RetriableError: Panic in wrapped function:", row.Err())
 	}
 	// Если ошибки нет
 	return row
@@ -203,7 +204,7 @@ func (pg PgStorage) GetGauge(ctx context.Context, key string) (float64, error) {
 	var metricValue float64
 	if err := row.Scan(&metricValue); err != nil {
 		log.Println("Error PG get gauge:", err)
-		return -1, err
+		return -1, fmt.Errorf("%s %v", "Error PG get gauge:", err)
 	}
 	return metricValue, nil
 }
@@ -215,7 +216,7 @@ func (pg PgStorage) GetCounter(ctx context.Context, key string) (int64, error) {
 	var metricValue int64
 	if err := row.Scan(&metricValue); err != nil {
 		log.Println("Error PG get counter:", err)
-		return -1, err
+		return -1, fmt.Errorf("%s %v", "Error PG get counter:", err)
 	}
 	return metricValue, nil
 }
@@ -235,7 +236,7 @@ func (pg PgStorage) GetValue(ctx context.Context, t string, key string) (any, er
 	var metricValue any
 	if err := row.Scan(&metricValue); err != nil {
 		log.Println("Error PG GetValue:", err)
-		return -1, err
+		return -1, fmt.Errorf("%s %v", "Error PG GetValue:", err)
 	}
 	return metricValue, nil
 }
@@ -257,7 +258,7 @@ func pgQueryWrapper(f func(ctx context.Context, query string, args ...any) (*sql
 			rows, err := f(ctx, sqlQuery, args...)
 			if err != nil {
 				if i == 2 {
-					log.Panicf("%s %v", "pgQueryWrapper RetriableError: Panic in wrapped function:", err)
+					return nil, fmt.Errorf("%s %v", "pgQueryWrapper RetriableError: Panic in wrapped function:", err)
 				}
 				continue
 			}
@@ -267,7 +268,7 @@ func pgQueryWrapper(f func(ctx context.Context, query string, args ...any) (*sql
 	}
 	// Если ошибка non-retriable
 	if err != nil {
-		log.Panicf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
+		return nil, fmt.Errorf("%s %v", "pg.Wrapper Non-RetriableError: Panic in wrapped function:", err)
 	}
 	// Если ошибки нет
 	return rows, nil
