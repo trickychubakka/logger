@@ -20,6 +20,7 @@ type Config struct {
 	FileStoragePath     string
 	Restore             bool
 	DatabaseDSN         string
+	UseDBConfig         bool
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -68,6 +69,7 @@ func InitConfig(conf *Config) error {
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
 		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
 		flag.Parse()
 	}
 
@@ -141,7 +143,7 @@ func InitConfig(conf *Config) error {
 	}
 
 	// Если DatabaseDSN нет в переменных окружения и в параметрах запуска -- пытаемся прочитать из dbconfig.yaml
-	if conf.DatabaseDSN == "" {
+	if conf.DatabaseDSN == "" && conf.UseDBConfig {
 		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
 		if connStr, err := readDBConfig(); err != nil {
 			log.Println("Error reading dbconfig.yaml:", err)
