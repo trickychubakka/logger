@@ -75,13 +75,13 @@ func Load(fname string) (handlers.Storager, error) {
 
 // SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики
 // Для случая ключа STORE_INTERVAL = 0
-func SyncDumpUpdate(ctx context.Context, store handlers.Storager) gin.HandlerFunc {
+func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
-		log.Println("SyncDumpUpdate StoreMetricInterval :", initconf.Conf.StoreMetricInterval)
-		if initconf.Conf.StoreMetricInterval == 0 {
+		log.Println("SyncDumpUpdate StoreMetricInterval :", conf.StoreMetricInterval)
+		if conf.StoreMetricInterval == 0 {
 			log.Println("sync flush metric into dump")
-			if err := Save(ctx, store, initconf.Conf.FileStoragePath); err != nil {
+			if err := Save(ctx, store, conf.FileStoragePath); err != nil {
 				log.Println("SyncDumpUpdate error:", err)
 			}
 		}

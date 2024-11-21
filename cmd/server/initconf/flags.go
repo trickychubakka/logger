@@ -29,8 +29,6 @@ func IsValidIP(ip string) bool {
 	return res != nil
 }
 
-var Conf Config
-
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 

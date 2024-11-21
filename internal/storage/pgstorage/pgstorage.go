@@ -73,10 +73,10 @@ func pgExecWrapper(f func(ctx context.Context, query string, args ...any) (sql.R
 	return nil
 }
 
-func New(ctx context.Context) (PgStorage, error) {
+func New(ctx context.Context, conf *initconf.Config) (PgStorage, error) {
 	pg := database.Postgresql{}
 	log.Println("Connecting to database ...", pg)
-	_ = pg.Connect(initconf.Conf.DatabaseDSN)
+	_ = pg.Connect(conf.DatabaseDSN)
 
 	log.Println("creating gauge table")
 	sqlQuery := `CREATE TABLE IF NOT EXISTS gauge (

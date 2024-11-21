@@ -25,7 +25,7 @@ import (
 var sugar zap.SugaredLogger
 
 // task функция для старта дампа метрик на диск раз в interval секунд
-func task(ctx context.Context, interval int, store handlers.Storager) {
+func task(ctx context.Context, interval int, store handlers.Storager, conf *initconf.Config) {
 	// запускаем бесконечный цикл
 	for {
 		select {
@@ -35,8 +35,8 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 
 		// выполняем нужный нам код
 		default:
-			println("Save metrics dump to file", initconf.Conf.FileStoragePath, "with interval", interval, "s")
-			err := internal.Save(ctx, store, initconf.Conf.FileStoragePath)
+			println("Save metrics dump to file", conf.FileStoragePath, "with interval", interval, "s")
+			err := internal.Save(ctx, store, conf.FileStoragePath)
 			if err != nil {
 				return
 			}
@@ -50,14 +50,13 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 // 1. создан memstorage восстановлением из dump-а
 // 2. при ошибке в п.1 -- создан новый memstorage
 // 3. если определена переменная DatabaseDSN -- создан store типа pgstorage
-func storeInit(ctx context.Context, store handlers.Storager) (handlers.Storager, error) {
+func storeInit(ctx context.Context, store handlers.Storager, conf *initconf.Config) (handlers.Storager, error) {
 	var err error
-	//var store handlers.Storager
-	if initconf.Conf.DatabaseDSN == "" {
+	if conf.DatabaseDSN == "" {
 		// если определена опция восстановления store из дампа
-		if initconf.Conf.Restore {
+		if conf.Restore {
 			log.Println("DatabaseDSN is not configured, Load metric dump from file")
-			store, err := internal.Load(initconf.Conf.FileStoragePath)
+			store, err := internal.Load(conf.FileStoragePath)
 			log.Println("Metric after dump load :", store)
 			if err == nil {
 				return store, nil
@@ -74,9 +73,9 @@ func storeInit(ctx context.Context, store handlers.Storager) (handlers.Storager,
 		return store, nil
 	}
 	// Инициализация хранилища метрик типа pgstorage
-	if initconf.Conf.DatabaseDSN != "" {
+	if conf.DatabaseDSN != "" {
 		log.Println("storeInit DatabaseDSN is configured, start to initialize pgstorage.")
-		store, err = pgstorage.New(ctx)
+		store, err = pgstorage.New(ctx, conf)
 		if err != nil {
 			log.Println("storeInit error pgstorage initialization.")
 			return nil, err
@@ -85,7 +84,6 @@ func storeInit(ctx context.Context, store handlers.Storager) (handlers.Storager,
 	return store, nil
 }
 
-// var store handlers.Storager
 var err error
 
 func main() {
@@ -94,7 +92,7 @@ func main() {
 
 	var ctx, ctxDUMP context.Context
 	var cancel, cancelDUMP context.CancelFunc
-
+	var conf initconf.Config
 	var store handlers.Storager
 
 	// Parent context
@@ -102,14 +100,14 @@ func main() {
 	defer cancel()
 
 	// Config initialization
-	if err := initconf.InitConfig(&initconf.Conf); err != nil {
+	if err := initconf.InitConfig(&conf); err != nil {
 		log.Println("Panic in initConfig")
 		panic(err)
 	}
-	log.Println("initconf is:", initconf.Conf)
+	log.Println("initconf is:", conf)
 
 	// store initialization
-	if store, err = storeInit(ctx, store); err != nil {
+	if store, err = storeInit(ctx, store, &conf); err != nil {
 		log.Println("Storage initialization error :", err)
 		panic(err)
 	}
@@ -120,7 +118,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := internal.Save(ctx, store, initconf.Conf.FileStoragePath)
+		err := internal.Save(ctx, store, conf.FileStoragePath)
 		if err != nil {
 			return
 		}
@@ -139,19 +137,19 @@ func main() {
 	sugar = *logger.Sugar()
 
 	// Если не определен DatabaseDSN и StoreMetricInterval не равен нулю -- запускается автодамп memstorage
-	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
+	if conf.DatabaseDSN == "" && conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения
-		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
+		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", conf.StoreMetricInterval)
 		// Создаем дочерний контекст для процесса дампа метрик в случае, если StoreMetricInterval != 0
 		ctxDUMP, cancelDUMP = context.WithCancel(ctx)
 		// запускаем горутину
-		go task(ctxDUMP, initconf.Conf.StoreMetricInterval, store)
+		go task(ctxDUMP, conf.StoreMetricInterval, store, &conf)
 	}
 
-	sugar.Infow("initConfig sugar logging", "conf.RunAddr", initconf.Conf.RunAddr)
+	sugar.Infow("initConfig sugar logging", "conf.RunAddr", conf.RunAddr)
 
 	// Если определена опция Logfile -- логи сервера перенаправляются в этот файл
-	if initconf.Conf.Logfile != "" {
+	if conf.Logfile != "" {
 		file, err := os.OpenFile("server.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal("Failed to open log file:", err)
@@ -168,26 +166,26 @@ func main() {
 
 	router.Use(compress.GzipRequestHandle)
 	//router.Use(compress.GzipResponseHandle(compress.DefaultCompression))
-	if initconf.Conf.DatabaseDSN == "" {
-		router.Use(internal.SyncDumpUpdate(ctx, store))
+	if conf.DatabaseDSN == "" {
+		router.Use(internal.SyncDumpUpdate(ctx, store, &conf))
 	}
 	router.GET("/", handlers.GetAllMetrics(ctx, store))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(ctx, store))
-	router.POST("/update", handlers.MetricHandlerJSON(ctx, store))
+	router.POST("/update", handlers.MetricHandlerJSON(ctx, store, &conf))
 	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
 	router.POST("/value", handlers.GetMetricJSON(ctx, store))
-	router.GET("/ping", handlers.DBPing(initconf.Conf.DatabaseDSN))
+	router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
 
-	err = router.Run(initconf.Conf.RunAddr)
+	err = router.Run(conf.RunAddr)
 	if err != nil {
 		panic(err)
 	}
 
-	sugar.Infow("\nServer started on runAddr %s \n", initconf.Conf.RunAddr)
+	sugar.Infow("\nServer started on runAddr %s \n", conf.RunAddr)
 
 	// завершаем дочерний контекст дампа, чтобы завершить горутину дампа метрик в файл
-	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
+	if conf.DatabaseDSN == "" && conf.StoreMetricInterval != 0 {
 		cancelDUMP()
 	}
 

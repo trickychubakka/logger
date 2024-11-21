@@ -113,7 +113,7 @@ func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 }
 
 // MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
-func MetricHandlerJSON(ctx context.Context, store Storager) gin.HandlerFunc {
+func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -174,8 +174,8 @@ func MetricHandlerJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 			log.Println("GetMetric Writer.Write error:", err)
 		}
 
-		log.Println("Initconfig before Save is:", initconf.Conf)
-		log.Println("start SAVE metrics dump to file: ", initconf.Conf.FileStoragePath, "Store is:", store)
+		log.Println("Initconfig before Save is:", conf)
+		log.Println("start SAVE metrics dump to file: ", conf.FileStoragePath, "Store is:", store)
 	}
 }
 
