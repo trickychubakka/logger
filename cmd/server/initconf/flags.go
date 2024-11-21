@@ -33,7 +33,7 @@ var Conf Config
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 
-func readDbConfig() (string, error) {
+func readDBConfig() (string, error) {
 	dbCfg := &conf.Config{}
 	var connStr string
 	log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
@@ -143,7 +143,7 @@ func InitConfig(conf *Config) error {
 	// Если DatabaseDSN нет в переменных окружения и в параметрах запуска -- пытаемся прочитать из dbconfig.yaml
 	if conf.DatabaseDSN == "" {
 		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
-		if connStr, err := readDbConfig(); err != nil {
+		if connStr, err := readDBConfig(); err != nil {
 			log.Println("Error reading dbconfig.yaml:", err)
 		} else {
 			conf.DatabaseDSN = connStr
