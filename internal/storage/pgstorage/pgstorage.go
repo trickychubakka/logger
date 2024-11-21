@@ -106,7 +106,7 @@ func (pg PgStorage) UpdateGauge(ctx context.Context, key string, value float64) 
 	sqlQuery := "INSERT INTO gauge (metric_name, metric_value) VALUES($1,$2) ON CONFLICT(metric_name) DO UPDATE SET metric_name = $1, metric_value = $2"
 	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
-		return fmt.Errorf("Error PG update gauge:", err)
+		return fmt.Errorf("%s %v", "error PG update gauge", err)
 	}
 	return nil
 }
@@ -119,7 +119,7 @@ func (pg PgStorage) UpdateCounter(ctx context.Context, key string, value int64) 
 		"metric_value = (SELECT metric_value FROM counter WHERE metric_name = $1) + $2"
 	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
-		return fmt.Errorf("Error PG update counter:", err)
+		return fmt.Errorf("%s %v", "error PG update counter", err)
 	}
 	return nil
 }
