@@ -26,12 +26,9 @@ func run(myMetrics internal.MetricsStorage) {
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
 
-		//if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
-		//	log.Println("Error main in SendMetricsJSON:")
 		log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
 		if err := internal.SendMetricsJSONBatch(&myMetrics, "http://"+conf.address+"/updates"); err != nil {
 			log.Println("main: error from SendMetricsJSONBatch:", err)
-			//log.Println("Unwrapped error: ", errors.Unwrap(err))
 			log.Panicf("%s", errors.Unwrap(err))
 		}
 	}

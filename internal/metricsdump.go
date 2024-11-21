@@ -105,7 +105,7 @@ func Load(fname string) (handlers.Storager, error) {
 	var memStore memstorage.MemStorage
 	data, err := os.ReadFile(fname)
 	if err != nil {
-		print("Save. Error read store dump file", fname)
+		log.Println("Save. Error read store dump file", fname)
 		return nil, err
 	}
 	//err = json.Unmarshal(data, &store)

@@ -48,14 +48,14 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 }
 
 // Контексты: родительский, контекст postgres, контекст DUMP-а
-var ctx, ctxPG, ctxDUMP context.Context
-var cancel, cancelPG, cancelDUMP context.CancelFunc
+//var ctx, ctxPG, ctxDUMP context.Context
+//var cancel, cancelPG, cancelDUMP context.CancelFunc
 
 // storeInit функция инициализации store. В зависимости от настроек (env, флаги) будет либо
 // 1. создан memstorage восстановлением из dump-а
 // 2. при ошибке в п.1 -- создан новый memstorage
 // 3. если определена переменная DatabaseDSN -- создан store типа pgstorage
-func storeInit(ctx context.Context) (handlers.Storager, error) {
+func storeInit(ctx context.Context, store handlers.Storager) (handlers.Storager, error) {
 	var err error
 	//var store handlers.Storager
 	if initconf.Conf.DatabaseDSN == "" {
@@ -74,7 +74,7 @@ func storeInit(ctx context.Context) (handlers.Storager, error) {
 		store, err = memstorage.New(ctx)
 		if err != nil {
 			log.Println("storeInit error memstorage initialization.")
-			panic(err)
+			return nil, err
 		}
 		return store, nil
 	}
@@ -84,18 +84,23 @@ func storeInit(ctx context.Context) (handlers.Storager, error) {
 		store, err = pgstorage.New(ctx)
 		if err != nil {
 			log.Println("storeInit error pgstorage initialization.")
-			panic(err)
+			return nil, err
 		}
 	}
 	return store, nil
 }
 
-var store handlers.Storager
+// var store handlers.Storager
 var err error
 
 func main() {
 	// Изменение режима работы GIN
 	//gin.SetMode(gin.ReleaseMode)
+
+	var ctx, ctxDUMP context.Context
+	var cancel, cancelDUMP context.CancelFunc
+
+	var store handlers.Storager
 
 	// Parent context
 	ctx, cancel = context.WithCancel(context.Background())
@@ -109,7 +114,7 @@ func main() {
 	log.Println("initconf is:", initconf.Conf)
 
 	// store initialization
-	if store, err = storeInit(ctx); err != nil {
+	if store, err = storeInit(ctx, store); err != nil {
 		log.Println("Storage initialization error :", err)
 		panic(err)
 	}
@@ -197,7 +202,7 @@ func main() {
 	sugar.Infow("\nServer started on runAddr %s \n", initconf.Conf.RunAddr)
 
 	// завершаем дочерний контекст дампа, чтобы завершить горутину дампа метрик в файл
-	if initconf.Conf.StoreMetricInterval != 0 {
+	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
 		cancelDUMP()
 	}
 
