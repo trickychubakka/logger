@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"io"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/internal/database"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
 	"net/http"
@@ -318,9 +318,17 @@ func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
-func DBPing(db *sql.DB) gin.HandlerFunc {
+func DBPing(connStr string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := db.Ping()
+		// Тест коннекта к базе
+		log.Println("TEST Connecting to base")
+		db := database.Postgresql{}
+		err := db.Connect(connStr)
+		if err != nil {
+			log.Println("Error connecting to database :", err)
+		}
+		defer db.Close()
+		err = db.DB.Ping()
 		if err != nil {
 			log.Println("database connect error")
 			c.Status(http.StatusInternalServerError)

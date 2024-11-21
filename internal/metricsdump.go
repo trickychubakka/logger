@@ -16,34 +16,8 @@ type Storager interface {
 	GetAllMetrics(ctx context.Context) (any, error)
 }
 
-// Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
-var timeoutsRetryConst = [3]int{1, 3, 5}
-
-// SaveOLD функция сохранения дампа метрик в файл.
-func SaveOLD(ctx context.Context, store handlers.Storager, fname string) error {
-	// сериализуем структуру в JSON формат
-	metrics, err := store.GetAllMetrics(ctx)
-	if err != nil {
-		log.Println("error store serialisation in Save", err)
-		return err
-	}
-
-	data, err := json.Marshal(metrics)
-	if err != nil {
-		log.Println("Save. Error marshalling store")
-		return err
-	}
-
-	err = os.WriteFile(fname, data, 0666)
-	if err != nil {
-		log.Println("Save. Error os.WriteFile")
-		return err
-	}
-	return nil
-}
-
 // Save функция сохранения дампа метрик в файл.
-func Save(ctx context.Context, store handlers.Storager, fname string) error {
+func Save(ctx context.Context, store Storager, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics(ctx)
 	if err != nil {
@@ -61,7 +35,7 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 
 	if err != nil {
 		log.Println("Save. Error os.WriteFile")
-		//for i, t := range [3]int{1, 3, 5} {
+		// константа timeoutsRetryConst = [3]int{1, 3, 5} определена в metrics.go
 		for i, t := range timeoutsRetryConst {
 			log.Println("Save: Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
@@ -79,26 +53,6 @@ func Save(ctx context.Context, store handlers.Storager, fname string) error {
 }
 
 // Load функция чтения дампа метрик из файла. Применимо только для memstorage
-// func Load(_ context.Context, store handlers.Storager, fname string) error {
-// func Load(store *handlers.Storager, fname string) error {
-//
-//		// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
-//		var memStore memstorage.MemStorage
-//		data, err := os.ReadFile(fname)
-//		if err != nil {
-//			print("Save. Error read store dump file", fname)
-//			return err
-//		}
-//		//err = json.Unmarshal(data, &store)
-//		err = json.Unmarshal(data, &memStore)
-//		if err != nil {
-//			log.Println("Load. Error unmarshalling from file")
-//			return err
-//		}
-//		*store = memStore
-//		log.Println("storage from Load:", store)
-//		return nil
-//	}
 func Load(fname string) (handlers.Storager, error) {
 	var store handlers.Storager
 	// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
@@ -108,7 +62,6 @@ func Load(fname string) (handlers.Storager, error) {
 		log.Println("Save. Error read store dump file", fname)
 		return nil, err
 	}
-	//err = json.Unmarshal(data, &store)
 	err = json.Unmarshal(data, &memStore)
 	if err != nil {
 		log.Println("Load. Error unmarshalling from file")

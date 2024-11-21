@@ -3,7 +3,9 @@ package initconf
 import (
 	"flag"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
+	"logger/conf"
 	"net"
 	"net/url"
 	"os"
@@ -30,6 +32,31 @@ var Conf Config
 
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
+
+func readDbConfig() (string, error) {
+	dbCfg := &conf.Config{}
+	var connStr string
+	log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
+	viper.SetConfigName("dbconfig")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./conf")
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Println("Error reading conf file :", err)
+		return "", err
+	} else {
+		err = viper.Unmarshal(&dbCfg)
+		if err != nil {
+			log.Println("Error unmarshalling conf :", err)
+			return "", err
+		}
+	}
+
+	connStr = fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=%s", dbCfg.Database.User, dbCfg.Database.Password, dbCfg.Database.Host, dbCfg.Database.Dbname, dbCfg.Database.Sslmode)
+	return connStr, nil
+}
 
 func InitConfig(conf *Config) error {
 
@@ -111,6 +138,16 @@ func InitConfig(conf *Config) error {
 		log.Println("env var DATABASE_DSN was specified, use DATABASE_DSN =", envDatabaseDSN)
 		conf.DatabaseDSN = envDatabaseDSN
 		log.Println("Using env var DATABASE_DSN=", conf.DatabaseDSN)
+	}
+
+	// Если DatabaseDSN нет в переменных окружения и в параметрах запуска -- пытаемся прочитать из dbconfig.yaml
+	if conf.DatabaseDSN == "" {
+		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
+		if connStr, err := readDbConfig(); err != nil {
+			log.Println("Error reading dbconfig.yaml:", err)
+		} else {
+			conf.DatabaseDSN = connStr
+		}
 	}
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.RunAddr)

@@ -19,6 +19,9 @@ type MetricsStorage struct {
 	counterMap map[string]int64
 }
 
+// Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
+var timeoutsRetryConst = [3]int{1, 3, 5}
+
 var client = &http.Client{}
 
 func NewMetricsStorageObj() MetricsStorage {
@@ -101,8 +104,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	response, err := client.Do(req)
 
 	if err != nil {
-
-		for i, t := range [3]int{1, 3, 5} {
+		for i, t := range timeoutsRetryConst {
 			log.Println("SendRequest. Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			response, err = client.Do(req)

@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"logger/internal"
-	"logger/internal/database"
 	"logger/internal/storage/memstorage"
 	"logger/internal/storage/pgstorage"
 	"os/signal"
@@ -147,7 +146,6 @@ func main() {
 	if initconf.Conf.DatabaseDSN == "" && initconf.Conf.StoreMetricInterval != 0 {
 		// создаём контекст с функцией завершения
 		log.Println("Init context fo goroutine (Conf.StoreMetricInterval is not 0):", initconf.Conf.StoreMetricInterval)
-		//ctx, cancel = context.WithCancel(context.Background())
 		// Создаем дочерний контекст для процесса дампа метрик в случае, если StoreMetricInterval != 0
 		ctxDUMP, cancelDUMP = context.WithCancel(ctx)
 		// запускаем горутину
@@ -166,14 +164,14 @@ func main() {
 		defer file.Close()
 	}
 
-	// Тест коннекта к базе
-	log.Println("TEST Connecting to base")
-	db := database.Postgresql{}
-	err = db.Connect()
-	if err != nil {
-		log.Println("Error connecting to database :", err)
-	}
-	defer db.Close()
+	//// Тест коннекта к базе
+	//log.Println("TEST Connecting to base")
+	//db := database.Postgresql{}
+	//err = db.Connect()
+	//if err != nil {
+	//	log.Println("Error connecting to database :", err)
+	//}
+	//defer db.Close()
 
 	// GIN init
 	router := gin.Default()
@@ -192,7 +190,7 @@ func main() {
 	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
 	router.POST("/value", handlers.GetMetricJSON(ctx, store))
-	router.GET("/ping", handlers.DBPing(db.DB))
+	router.GET("/ping", handlers.DBPing(initconf.Conf.DatabaseDSN))
 
 	err = router.Run(initconf.Conf.RunAddr)
 	if err != nil {

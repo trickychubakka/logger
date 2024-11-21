@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
+	"logger/cmd/server/initconf"
 	"logger/conf"
 	"logger/internal/database"
 	"logger/internal/storage"
@@ -74,7 +75,7 @@ func pgExecWrapper(f func(ctx context.Context, query string, args ...any) (sql.R
 func New(ctx context.Context) (PgStorage, error) {
 	pg := database.Postgresql{}
 	log.Println("Connecting to database ...", pg)
-	_ = pg.Connect()
+	_ = pg.Connect(initconf.Conf.DatabaseDSN)
 
 	log.Println("creating gauge table")
 	sqlQuery := `CREATE TABLE IF NOT EXISTS gauge (
