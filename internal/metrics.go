@@ -86,8 +86,9 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	req, err := http.NewRequest(http.MethodPost, url, body)
 
 	if err != nil {
-		log.Println("SendRequest. Panic creating request:", err)
-		panic(err)
+		log.Println("SendRequest. Error creating request:", err)
+		return nil, fmt.Errorf("%s %v", "SendRequest: http.NewRequest error.", err)
+		//panic(err)
 	}
 	if body != nil {
 		defer req.Body.Close()
@@ -110,9 +111,9 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			response, err = client.Do(req)
 			if err != nil {
 				log.Println("SendRequest: attempt ", i+1, " error")
-				log.Println("CHANGED")
 				if i == 2 {
-					panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
+					//panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
+					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error.", err)
 				}
 				continue
 			}
@@ -254,28 +255,4 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
 	}
 	defer response.Body.Close()
 	return nil
-}
-
-// PingServer -- функция ping-а сервера для решения проблемы metricstests
-func PingServer(url string, contentType string) (*http.Response, error) {
-	log.Println("PING SERVER with url", url)
-	var tmpVar int64
-	var tmpMetric = Metrics{"Ping", "counter", &tmpVar, nil}
-	payload, _ := json.Marshal(tmpMetric)
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload)) // без compress
-	if err != nil {
-		log.Println("Panic in PingServer(): ", err)
-		panic(err)
-	}
-
-	req.Header.Set("Content-Type", contentType)
-
-	response, err := client.Do(req)
-	if err != nil {
-		log.Println("PingServer. client.Do error: ", err)
-	}
-	log.Println("response in PingServer is:", response)
-	defer response.Body.Close()
-	return response, err
 }

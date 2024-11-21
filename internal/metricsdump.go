@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
 	"logger/cmd/server/initconf"
@@ -43,7 +44,7 @@ func Save(ctx context.Context, store Storager, fname string) error {
 			if err != nil {
 				log.Println("Save: attempt ", i+1, " error")
 				if i == 2 {
-					log.Panicf("%s %v", "Save: Panic, creating New PgStorage:", err)
+					fmt.Errorf("%s %v", "Save: os.WriteFile error:", err)
 				}
 				continue
 			}

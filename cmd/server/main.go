@@ -46,10 +46,6 @@ func task(ctx context.Context, interval int, store handlers.Storager) {
 	}
 }
 
-// Контексты: родительский, контекст postgres, контекст DUMP-а
-//var ctx, ctxPG, ctxDUMP context.Context
-//var cancel, cancelPG, cancelDUMP context.CancelFunc
-
 // storeInit функция инициализации store. В зависимости от настроек (env, флаги) будет либо
 // 1. создан memstorage восстановлением из dump-а
 // 2. при ошибке в п.1 -- создан новый memstorage
@@ -163,15 +159,6 @@ func main() {
 		log.SetOutput(file)
 		defer file.Close()
 	}
-
-	//// Тест коннекта к базе
-	//log.Println("TEST Connecting to base")
-	//db := database.Postgresql{}
-	//err = db.Connect()
-	//if err != nil {
-	//	log.Println("Error connecting to database :", err)
-	//}
-	//defer db.Close()
 
 	// GIN init
 	router := gin.Default()
