@@ -44,7 +44,7 @@ func Save(ctx context.Context, store Storager, fname string) error {
 			if err != nil {
 				log.Println("Save: attempt ", i+1, " error")
 				if i == 2 {
-					fmt.Errorf("%s %v", "Save: os.WriteFile error:", err)
+					return fmt.Errorf("%s %v", "Save: os.WriteFile error:", err)
 				}
 				continue
 			}
