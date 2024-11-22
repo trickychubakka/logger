@@ -94,6 +94,7 @@ func (ms MemStorage) GetAllCountersMap(_ context.Context) (map[string]int64, err
 }
 
 func (ms MemStorage) GetAllMetrics(_ context.Context) (any, error) {
+	//func (ms MemStorage) GetAllMetrics(_ context.Context) (interface{}, error) {
 	return ms, nil
 }
 
@@ -120,4 +121,17 @@ func Unmarshal(data []byte, stor *MemStorage) error {
 	stor.gaugeMap = tmp.GaugeMap
 	stor.counterMap = tmp.CounterMap
 	return nil
+}
+
+func Marshal(stor any) ([]byte, error) {
+	tmp := tmpMemStorage{
+		GaugeMap:   make(map[string]float64),
+		CounterMap: make(map[string]int64),
+	}
+	switch stor.(type) {
+	case MemStorage:
+		tmp.GaugeMap = stor.(MemStorage).gaugeMap
+		tmp.CounterMap = stor.(MemStorage).counterMap
+	}
+	return json.Marshal(tmp)
 }

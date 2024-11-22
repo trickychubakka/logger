@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -19,6 +18,7 @@ type Storager interface {
 
 // Save функция сохранения дампа метрик в файл.
 func Save(ctx context.Context, store Storager, fname string) error {
+	//func Save(ctx context.Context, store memstorage.MemStorage, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics(ctx)
 	if err != nil {
@@ -26,7 +26,8 @@ func Save(ctx context.Context, store Storager, fname string) error {
 		return err
 	}
 
-	data, err := json.Marshal(metrics)
+	//data, err := json.Marshal(metrics)
+	data, err := memstorage.Marshal(metrics)
 	if err != nil {
 		log.Println("Save. Error marshalling store")
 		return err
