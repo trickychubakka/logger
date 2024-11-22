@@ -94,7 +94,6 @@ func (ms MemStorage) GetAllCountersMap(_ context.Context) (map[string]int64, err
 }
 
 func (ms MemStorage) GetAllMetrics(_ context.Context) (any, error) {
-	//func (ms MemStorage) GetAllMetrics(_ context.Context) (interface{}, error) {
 	return ms, nil
 }
 
@@ -102,7 +101,7 @@ func (ms MemStorage) Close() error {
 	return nil
 }
 
-// Временная структура для использования в Unmarshal методе
+// Временная структура для использования в Marshal и Unmarshal функциях
 type tmpMemStorage struct {
 	GaugeMap   map[string]float64
 	CounterMap map[string]int64
@@ -123,16 +122,12 @@ func Unmarshal(data []byte, stor *MemStorage) error {
 	return nil
 }
 
+// Marshal функция для Marshal private полей структуры MemStorage
 func Marshal(stor any) ([]byte, error) {
 	tmp := tmpMemStorage{
 		GaugeMap:   make(map[string]float64),
 		CounterMap: make(map[string]int64),
 	}
-	//switch stor := stor.(type) {
-	//case MemStorage:
-	//	tmp.GaugeMap = stor.(MemStorage).gaugeMap
-	//	tmp.CounterMap = stor.(MemStorage).counterMap
-	//}
 	stor = stor.(MemStorage)
 	tmp.GaugeMap = stor.(MemStorage).gaugeMap
 	tmp.CounterMap = stor.(MemStorage).counterMap

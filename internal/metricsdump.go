@@ -18,7 +18,6 @@ type Storager interface {
 
 // Save функция сохранения дампа метрик в файл.
 func Save(ctx context.Context, store Storager, fname string) error {
-	//func Save(ctx context.Context, store memstorage.MemStorage, fname string) error {
 	// сериализуем структуру в JSON формат
 	metrics, err := store.GetAllMetrics(ctx)
 	if err != nil {
@@ -26,7 +25,7 @@ func Save(ctx context.Context, store Storager, fname string) error {
 		return err
 	}
 
-	//data, err := json.Marshal(metrics)
+	// Использование метода Marshal пакета memstorage из-за не-публичности полей, аналог вызова data, err := json.Marshal(metrics)
 	data, err := memstorage.Marshal(metrics)
 	if err != nil {
 		log.Println("Save. Error marshalling store")
@@ -64,7 +63,7 @@ func Load(fname string) (handlers.Storager, error) {
 		log.Println("Save. Error read store dump file", fname)
 		return nil, err
 	}
-	// Использование метода Unmarshal пакета memstorage из-за непубличности полей, аналог вызова err = json.Unmarshal(data, &memStore)
+	// Использование метода Unmarshal пакета memstorage из-за не-публичности полей, аналог вызова err = json.Unmarshal(data, &memStore)
 	err = memstorage.Unmarshal(data, &memStore)
 	if err != nil {
 		log.Println("Load. Error unmarshalling from file")
