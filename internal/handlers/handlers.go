@@ -328,7 +328,7 @@ func DBPing(connStr string) gin.HandlerFunc {
 			log.Println("Error connecting to database :", err)
 		}
 		defer db.Close()
-		err = db.DB.Ping()
+		err = db.Ping()
 		if err != nil {
 			log.Println("database connect error")
 			c.Status(http.StatusInternalServerError)

@@ -18,8 +18,8 @@ import (
 
 // PgStorage postgresql хранилище для метрик. Разные map-ы для разных типов метрик
 type PgStorage struct {
-	Cfg *conf.Config
-	DB  *sql.DB
+	cfg  *conf.Config
+	pgDB *database.Postgresql
 }
 
 type Metrics struct {
@@ -83,7 +83,7 @@ func New(ctx context.Context, conf *initconf.Config) (PgStorage, error) {
     	"metric_name" TEXT PRIMARY KEY, 
     	"metric_value" double precision
     	)`
-	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery)
+	err := pgExecWrapper(pg.ExecContext, ctx, sqlQuery)
 	if err != nil {
 		log.Fatal("Error creating table gauge:", err)
 	}
@@ -93,18 +93,18 @@ func New(ctx context.Context, conf *initconf.Config) (PgStorage, error) {
         "metric_name" TEXT PRIMARY KEY,
         "metric_value" BIGINT
       )`
-	err = pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery)
+	err = pgExecWrapper(pg.ExecContext, ctx, sqlQuery)
 	if err != nil {
 		log.Fatal("Error creating table counter:", err)
 	}
 
-	return PgStorage{pg.Cfg, pg.DB}, nil
+	return PgStorage{pg.Cfg, &pg}, nil
 }
 
 func (pg PgStorage) UpdateGauge(ctx context.Context, key string, value float64) error {
 	log.Println("UpdateGauge PG")
 	sqlQuery := "INSERT INTO gauge (metric_name, metric_value) VALUES($1,$2) ON CONFLICT(metric_name) DO UPDATE SET metric_name = $1, metric_value = $2"
-	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
+	err := pgExecWrapper(pg.pgDB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
 		return fmt.Errorf("%s %v", "error PG update gauge", err)
 	}
@@ -117,7 +117,7 @@ func (pg PgStorage) UpdateCounter(ctx context.Context, key string, value int64) 
 		" ON CONFLICT(metric_name)" +
 		" DO UPDATE SET " +
 		"metric_value = (SELECT metric_value FROM counter WHERE metric_name = $1) + $2"
-	err := pgExecWrapper(pg.DB.ExecContext, ctx, sqlQuery, key, value)
+	err := pgExecWrapper(pg.pgDB.ExecContext, ctx, sqlQuery, key, value)
 	if err != nil {
 		return fmt.Errorf("%s %v", "error PG update counter", err)
 	}
@@ -130,7 +130,7 @@ func (pg PgStorage) UpdateBatch(ctx context.Context, metrics []storage.Metrics) 
 		log.Println("UpdatePGBatch: No metrics to update im []Metrics")
 		return nil
 	}
-	tx, err := pg.DB.BeginTx(ctx, nil)
+	tx, err := pg.pgDB.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println("UpdatePGBatch: Error begin transaction:", err)
 		return err
@@ -200,7 +200,7 @@ func pgQueryRowWrapper(f func(ctx context.Context, query string, args ...any) *s
 func (pg PgStorage) GetGauge(ctx context.Context, key string) (float64, error) {
 	log.Println("GetGauge PG")
 	sqlQuery := "SELECT metric_value FROM gauge WHERE metric_name = $1"
-	row := pgQueryRowWrapper(pg.DB.QueryRowContext, ctx, sqlQuery, key)
+	row := pgQueryRowWrapper(pg.pgDB.QueryRowContext, ctx, sqlQuery, key)
 	var metricValue float64
 	if err := row.Scan(&metricValue); err != nil {
 		log.Println("Error PG get gauge:", err)
@@ -212,7 +212,7 @@ func (pg PgStorage) GetGauge(ctx context.Context, key string) (float64, error) {
 func (pg PgStorage) GetCounter(ctx context.Context, key string) (int64, error) {
 	log.Println("GetCounter PG")
 	sqlQuery := "SELECT metric_value FROM counter WHERE metric_name = $1"
-	row := pgQueryRowWrapper(pg.DB.QueryRowContext, ctx, sqlQuery, key)
+	row := pgQueryRowWrapper(pg.pgDB.QueryRowContext, ctx, sqlQuery, key)
 	var metricValue int64
 	if err := row.Scan(&metricValue); err != nil {
 		log.Println("Error PG get counter:", err)
@@ -226,10 +226,10 @@ func (pg PgStorage) GetValue(ctx context.Context, t string, key string) (any, er
 	var row *sql.Row
 	if t == "gauge" {
 		sqlQuery := "SELECT metric_value FROM gauge WHERE metric_name = $1"
-		row = pgQueryRowWrapper(pg.DB.QueryRowContext, ctx, sqlQuery, key)
+		row = pgQueryRowWrapper(pg.pgDB.QueryRowContext, ctx, sqlQuery, key)
 	} else if t == "counter" {
 		sqlQuery := "SELECT metric_value FROM counter WHERE metric_name = $1"
-		row = pgQueryRowWrapper(pg.DB.QueryRowContext, ctx, sqlQuery, key)
+		row = pgQueryRowWrapper(pg.pgDB.QueryRowContext, ctx, sqlQuery, key)
 	} else {
 		return nil, errors.New("wrong metric type")
 	}
@@ -285,7 +285,7 @@ func (pg PgStorage) GetAllMetrics(ctx context.Context) (any, error) {
 
 	// Выборка всех gauge метрик
 	sqlQuery := "SELECT metric_name, metric_value FROM gauge"
-	rows, err := pgQueryWrapper(pg.DB.QueryContext, ctx, sqlQuery)
+	rows, err := pgQueryWrapper(pg.pgDB.QueryContext, ctx, sqlQuery)
 	if err != nil {
 		return -1, err
 	}
@@ -307,7 +307,7 @@ func (pg PgStorage) GetAllMetrics(ctx context.Context) (any, error) {
 
 	// Выборка всех counter метрик
 	sqlQuery = "SELECT metric_name, metric_value FROM counter"
-	rows, err = pgQueryWrapper(pg.DB.QueryContext, ctx, sqlQuery)
+	rows, err = pgQueryWrapper(pg.pgDB.QueryContext, ctx, sqlQuery)
 	if err != nil {
 		return -1, err
 	}
@@ -331,5 +331,5 @@ func (pg PgStorage) GetAllMetrics(ctx context.Context) (any, error) {
 }
 
 func (pg PgStorage) Close() error {
-	return pg.DB.Close()
+	return pg.pgDB.Close()
 }

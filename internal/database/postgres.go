@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
@@ -11,7 +12,7 @@ import (
 
 type Postgresql struct {
 	Cfg *conf.Config
-	DB  *sql.DB
+	db  *sql.DB
 }
 
 func (p *Postgresql) Connect(connStr string) error {
@@ -35,22 +36,46 @@ func (p *Postgresql) Connect(connStr string) error {
 		return err
 	}
 	log.Println("Connected to database with DSN :", connStr, "with db:", db)
-	p.DB = db
+	p.db = db
 	return nil
 }
 
 func (p *Postgresql) Close() error {
-	return p.DB.Close()
+	return p.db.Close()
 }
 
 func (p *Postgresql) Exec(query string, args ...interface{}) (sql.Result, error) {
-	return p.DB.Exec(query, args...)
+	return p.db.Exec(query, args...)
+}
+
+func (p *Postgresql) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+	return p.db.ExecContext(ctx, query, args...)
 }
 
 func (p *Postgresql) Prepare(query string) (*sql.Stmt, error) {
-	return p.DB.Prepare(query)
+	return p.db.Prepare(query)
 }
 
 func (p *Postgresql) Query(query string, args ...interface{}) (*sql.Rows, error) {
-	return p.DB.Query(query, args...)
+	return p.db.Query(query, args...)
+}
+
+func (p *Postgresql) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+	return p.db.QueryContext(ctx, query, args...)
+}
+
+func (p *Postgresql) QueryRow(query string, args ...interface{}) *sql.Row {
+	return p.db.QueryRow(query, args...)
+}
+
+func (p *Postgresql) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+	return p.db.QueryRowContext(ctx, query, args...)
+}
+
+func (p *Postgresql) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	return p.db.BeginTx(ctx, opts)
+}
+
+func (p *Postgresql) Ping() error {
+	return p.db.Ping()
 }
