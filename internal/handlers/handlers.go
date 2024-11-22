@@ -58,9 +58,9 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	for _, m := range metrics {
 		switch m.MType {
 		case "gauge":
-			stor.GaugeMap[m.ID] = *m.Value
+			_ = stor.UpdateGauge(ctx, m.ID, *m.Value)
 		case "counter":
-			stor.CounterMap[m.ID] = *m.Delta
+			_ = stor.UpdateCounter(ctx, m.ID, *m.Delta)
 		}
 	}
 	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> stor :", stor)
