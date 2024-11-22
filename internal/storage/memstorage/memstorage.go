@@ -107,7 +107,7 @@ type tmpMemStorage struct {
 	CounterMap map[string]int64
 }
 
-// Unmarshal функция для Unmarshal приватных полей структуры MemStorage
+// Unmarshal функция для Unmarshal private полей структуры MemStorage
 func Unmarshal(data []byte, stor *MemStorage) error {
 	tmp := tmpMemStorage{
 		GaugeMap:   make(map[string]float64),
