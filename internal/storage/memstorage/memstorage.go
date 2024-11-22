@@ -128,10 +128,13 @@ func Marshal(stor any) ([]byte, error) {
 		GaugeMap:   make(map[string]float64),
 		CounterMap: make(map[string]int64),
 	}
-	switch stor.(type) {
-	case MemStorage:
-		tmp.GaugeMap = stor.(MemStorage).gaugeMap
-		tmp.CounterMap = stor.(MemStorage).counterMap
-	}
+	//switch stor := stor.(type) {
+	//case MemStorage:
+	//	tmp.GaugeMap = stor.(MemStorage).gaugeMap
+	//	tmp.CounterMap = stor.(MemStorage).counterMap
+	//}
+	stor = stor.(MemStorage)
+	tmp.GaugeMap = stor.(MemStorage).gaugeMap
+	tmp.CounterMap = stor.(MemStorage).counterMap
 	return json.Marshal(tmp)
 }
