@@ -107,14 +107,14 @@ type tmpMemStorage struct {
 	CounterMap map[string]int64
 }
 
-// Unmarshal метод MemStorage для Unmarshal приватных полей структуры MemStorage
-func (ms MemStorage) Unmarshal(data []byte) error {
+// Unmarshal функция для Unmarshal приватных полей структуры MemStorage
+func Unmarshal(data []byte, stor *MemStorage) error {
 	var tmp tmpMemStorage
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err
 	}
-	ms.gaugeMap = tmp.GaugeMap
-	ms.counterMap = tmp.CounterMap
+	stor.gaugeMap = tmp.GaugeMap
+	stor.counterMap = tmp.CounterMap
 	return nil
 }
