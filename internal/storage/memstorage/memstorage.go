@@ -2,6 +2,7 @@ package memstorage
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"logger/internal/storage"
@@ -97,5 +98,23 @@ func (ms MemStorage) GetAllMetrics(_ context.Context) (any, error) {
 }
 
 func (ms MemStorage) Close() error {
+	return nil
+}
+
+// Временная структура для использования в Unmarshal методе
+type tmpMemStorage struct {
+	GaugeMap   map[string]float64
+	CounterMap map[string]int64
+}
+
+// Unmarshal метод MemStorage для Unmarshal приватных полей структуры MemStorage
+func (ms MemStorage) Unmarshal(data []byte) error {
+	var tmp tmpMemStorage
+	err := json.Unmarshal(data, &tmp)
+	if err != nil {
+		return err
+	}
+	ms.gaugeMap = tmp.GaugeMap
+	ms.counterMap = tmp.CounterMap
 	return nil
 }

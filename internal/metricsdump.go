@@ -63,7 +63,8 @@ func Load(fname string) (handlers.Storager, error) {
 		log.Println("Save. Error read store dump file", fname)
 		return nil, err
 	}
-	err = json.Unmarshal(data, &memStore)
+	// Использование метода Unmarshal объекта MemStorage из-за непубличности полей, аналог вызова err = json.Unmarshal(data, &memStore)
+	err = memStore.Unmarshal(data)
 	if err != nil {
 		log.Println("Load. Error unmarshalling from file")
 		return nil, err
