@@ -109,7 +109,10 @@ type tmpMemStorage struct {
 
 // Unmarshal функция для Unmarshal приватных полей структуры MemStorage
 func Unmarshal(data []byte, stor *MemStorage) error {
-	var tmp tmpMemStorage
+	tmp := tmpMemStorage{
+		GaugeMap:   make(map[string]float64),
+		CounterMap: make(map[string]int64),
+	}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
 		return err

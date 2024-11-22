@@ -131,7 +131,6 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 			return
 		}
 
-		// TODO логирование запроса
 		log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
 
 		if tmpMetric.MType == "gauge" {
