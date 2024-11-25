@@ -164,17 +164,17 @@ func main() {
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
 
-	router.Use(compress.GzipRequestHandle)
+	router.Use(compress.GzipRequestHandle(ctx, &conf))
 	//router.Use(compress.GzipResponseHandle(compress.DefaultCompression))
 	if conf.DatabaseDSN == "" {
 		router.Use(internal.SyncDumpUpdate(ctx, store, &conf))
 	}
 	router.GET("/", handlers.GetAllMetrics(ctx, store))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(ctx, store))
-	router.POST("/update", handlers.MetricHandlerJSON(ctx, store, &conf))
-	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store))
+	router.POST("/update/", handlers.MetricHandlerJSON(ctx, store, &conf))
+	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store, &conf))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
-	router.POST("/value", handlers.GetMetricJSON(ctx, store))
+	router.POST("/value/", handlers.GetMetricJSON(ctx, store, &conf))
 	router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
 
 	err = router.Run(conf.RunAddr)

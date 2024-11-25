@@ -21,6 +21,7 @@ type Config struct {
 	Restore             bool
 	DatabaseDSN         string
 	UseDBConfig         bool
+	Key                 string
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -67,6 +68,8 @@ func InitConfig(conf *Config) error {
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
 		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
+		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
 		flag.Parse()
 	}
@@ -148,6 +151,12 @@ func InitConfig(conf *Config) error {
 		} else {
 			conf.DatabaseDSN = connStr
 		}
+	}
+
+	if envKey := os.Getenv("KEY"); envKey != "" {
+		log.Println("env var DATABASE_DSN was specified, use DATABASE_DSN =", envKey)
+		conf.Key = envKey
+		log.Println("Using key")
 	}
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.RunAddr)
