@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,21 +10,32 @@ import (
 	"io"
 	"log"
 	"logger/cmd/server/initconf"
-	"logger/internal"
+	"logger/internal/database"
+	"logger/internal/storage"
+	"logger/internal/storage/memstorage"
 	"net/http"
 	"strconv"
 	"strings"
 )
 
-//var Store = memstorage.New()
-
 // Константа для кодирования смысла полей после парсинга URL на основе их порядкового номера
-// Пример: localhost:8080/update/gauge/metric2/777.4
+// Пример: localhost:8080/update/gauge/metric2/7.4
 const (
 	metricType  = 1
 	metricName  = 2
 	metricValue = 3
 )
+
+type Storager interface {
+	UpdateGauge(ctx context.Context, key string, value float64) error
+	UpdateCounter(ctx context.Context, key string, value int64) error
+	UpdateBatch(ctx context.Context, metrics []storage.Metrics) error
+	GetGauge(ctx context.Context, key string) (float64, error)
+	GetCounter(ctx context.Context, key string) (int64, error)
+	GetValue(ctx context.Context, t string, key string) (any, error)
+	GetAllMetrics(ctx context.Context) (any, error)
+	Close() error
+}
 
 // urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
 func urlToMap(url string) ([]string, error) {
@@ -40,194 +52,289 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
+// MetricsToMemstorage функция конвертации Metrics в Memstorage
+func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memstorage.MemStorage, error) {
+	stor, _ := memstorage.New(ctx)
+	for _, m := range metrics {
+		switch m.MType {
+		case "gauge":
+			_ = stor.UpdateGauge(ctx, m.ID, *m.Value)
+		case "counter":
+			_ = stor.UpdateCounter(ctx, m.ID, *m.Delta)
+		}
+	}
+	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> stor :", stor)
+	return stor, nil
+}
+
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
-func MetricsHandler(c *gin.Context) {
-	splittedURL, err := urlToMap(c.Request.URL.String())
-	if err != nil {
-		c.Status(http.StatusNotFound)
-		return
-	}
-	// metricHandler Обработка gauge метрики
-	if splittedURL[metricType] == "gauge" {
-		if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
-			if err := initconf.Store.UpdateGauge(splittedURL[metricName], val); err != nil {
-				c.Status(http.StatusInternalServerError)
+func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		splittedURL, err := urlToMap(c.Request.URL.String())
+		if err != nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		// metricHandler Обработка gauge метрики
+		if splittedURL[metricType] == "gauge" {
+			if val, err := strconv.ParseFloat(splittedURL[metricValue], 64); err == nil {
+				if err := store.UpdateGauge(ctx, splittedURL[metricName], val); err != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+			} else {
+				log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be float64")
+				c.Status(http.StatusBadRequest)
 				return
 			}
+			// metricHandler Обработка counter метрик
+		} else if splittedURL[metricType] == "counter" {
+			if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
+				if err := store.UpdateCounter(ctx, splittedURL[metricName], val); err != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+			} else {
+				log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be int64")
+				c.Status(http.StatusBadRequest)
+				return
+			}
+			// Неправильный тип метрики
 		} else {
-			log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be float64")
+			log.Println("Error in MetricHandler: Wrong metric type")
 			c.Status(http.StatusBadRequest)
 			return
 		}
-		// metricHandler Обработка counter метрик
-	} else if splittedURL[metricType] == "counter" {
-		if val, err := strconv.ParseInt(splittedURL[metricValue], 10, 64); err == nil {
-			if err := initconf.Store.UpdateCounter(splittedURL[metricName], val); err != nil {
-				c.Status(http.StatusInternalServerError)
-				return
-			}
-		} else {
-			log.Println("Error in MetricHandler: There is no metric or wrong metric value type -- must be int64")
-			c.Status(http.StatusBadRequest)
-			return
-		}
-		// Неправильный тип метрики
-	} else {
-		log.Println("Error in MetricHandler: Wrong metric type")
-		c.Status(http.StatusBadRequest)
-		return
+		log.Println("Requested PLAIN metric UPDATE with next metric")
+		// Формируем ответ
+		c.Header("content-type", "text/html; charset=utf-8")
+		c.Status(http.StatusOK)
 	}
-	log.Println("Requested PLAIN metric UPDATE with next metric")
-	// Формируем ответ
-	c.Header("content-type", "text/html; charset=utf-8")
-	c.Status(http.StatusOK)
 }
 
 // MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
-func MetricHandlerJSON(c *gin.Context) {
-	jsn, err := io.ReadAll(c.Request.Body)
-	if err != nil {
-		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
-		return
-	}
+func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jsn, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+			return
+		}
 
-	var tmpMetric internal.Metrics
+		//var tmpMetric internal.Metrics
+		var tmpMetric storage.Metrics
 
-	err = json.Unmarshal(jsn, &tmpMetric)
-	if err != nil {
-		log.Println("Error in json body read 2", err, "jsn is:", string(jsn))
-		c.Status(http.StatusBadRequest)
-		return
-	}
+		err = json.Unmarshal(jsn, &tmpMetric)
+		if err != nil {
+			log.Println("Error in json body read 2", err, "jsn is:", string(jsn))
+			c.Status(http.StatusBadRequest)
+			return
+		}
 
-	// TODO логирование запроса
-	log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
+		log.Println("Requested JSON metric UPDATE with next metric", tmpMetric)
 
-	if tmpMetric.MType == "gauge" {
-		if err := initconf.Store.UpdateGauge(tmpMetric.ID, *tmpMetric.Value); err != nil {
-			log.Println("Error in UpdateGauge:", err)
+		if tmpMetric.MType == "gauge" {
+			if err := store.UpdateGauge(ctx, tmpMetric.ID, *tmpMetric.Value); err != nil {
+				log.Println("Error in UpdateGauge:", err)
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+		} else if tmpMetric.MType == "counter" {
+			if err := store.UpdateCounter(ctx, tmpMetric.ID, *tmpMetric.Delta); err != nil {
+				log.Println("Error in UpdateCounter:", err)
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
+			if *tmpMetric.Delta, err = store.GetCounter(ctx, tmpMetric.ID); err != nil {
+				log.Println("Error in GetCounter:", err)
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+		} else {
+			log.Println("Error in MetricHandlerJSON: Wrong metric type")
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		j2 := io.NopCloser(bytes.NewBuffer(jsn))
+		log.Println("Request from j2:", j2)
+
+		resp, err := json.Marshal(tmpMetric)
+		if err != nil {
+			log.Println("Error in json.Marshal in handlers:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-	} else if tmpMetric.MType == "counter" {
-		if err := initconf.Store.UpdateCounter(tmpMetric.ID, *tmpMetric.Delta); err != nil {
-			log.Println("Error in UpdateCounter:", err)
+		c.Header("content-type", "application/json")
+		c.Status(http.StatusOK)
+
+		if _, err := c.Writer.Write(resp); err != nil {
+			log.Println("GetMetric Writer.Write error:", err)
+		}
+
+		log.Println("Initconfig before Save is:", conf)
+		log.Println("start SAVE metrics dump to file: ", conf.FileStoragePath, "Store is:", store)
+	}
+}
+
+// MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jsn, err := io.ReadAll(c.Request.Body)
+		if err != nil {
+			http.Error(c.Writer, "MetricHandlerBatchUpdate: Error in json body read", http.StatusInternalServerError)
+			return
+		}
+
+		var tmpMetrics []storage.Metrics
+
+		err = json.Unmarshal(jsn, &tmpMetrics)
+		if err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in json.Unmarshal", err, "jsn is:", string(jsn))
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		log.Println("MetricHandlerBatchUpdate: Requested JSON batch metric UPDATES with next []metric", tmpMetrics)
+
+		log.Println("MetricHandlerBatchUpdate: tmpMetrics : ", tmpMetrics, " -> store :", store)
+
+		j2 := io.NopCloser(bytes.NewBuffer(jsn))
+		log.Println("MetricHandlerBatchUpdate: Request from j2:", j2)
+
+		log.Println("MetricHandlerBatchUpdate. Starting storage batch update. Store before update is :", store)
+		if err := store.UpdateBatch(ctx, tmpMetrics); err != nil {
+			log.Println("MetricHandlerBatchUpdate. Error in UpdateBatch:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		// обновляем во временном объекте метрики значение Counter-а для выдачи его в response
-		if *tmpMetric.Delta, err = initconf.Store.GetCounter(tmpMetric.ID); err != nil {
-			log.Println("Error in GetCounter:", err)
+
+		resp, err := json.Marshal(store)
+		if err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in json.Marshal in handlers:", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-	} else {
-		log.Println("Error in MetricHandlerJSON: Wrong metric type")
-		c.Status(http.StatusBadRequest)
-		return
+		c.Header("content-type", "application/json")
+		c.Status(http.StatusOK)
+
+		if _, err := c.Writer.Write(resp); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Writer.Write error:", err)
+		}
 	}
-
-	j2 := io.NopCloser(bytes.NewBuffer(jsn))
-	log.Println("Request from j2:", j2)
-
-	resp, err := json.Marshal(tmpMetric)
-
-	if err != nil {
-		log.Println("Error in json.Marshal in handlers:", err)
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	c.Header("content-type", "application/json")
-	c.Status(http.StatusOK)
-
-	if _, err := c.Writer.Write(resp); err != nil {
-		log.Println("GetMetric Writer.Write error:", err)
-	}
-
-	log.Println("Initconfig before Save is:", initconf.Conf)
-	log.Println("start SAVE metrics dump to file: ", initconf.Conf.FileStoragePath, "Store is:", initconf.Store)
 }
 
 // GetAllMetrics получить все метрики
-func GetAllMetrics(c *gin.Context) {
+func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
 
-	metrics, err := initconf.Store.GetAllMetrics()
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
+		metrics, err := store.GetAllMetrics(ctx)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		c.Header("content-type", "text/html; charset=utf-8")
+		c.Status(http.StatusOK)
+		c.IndentedJSON(http.StatusOK, metrics)
 	}
-	c.Header("content-type", "text/html; charset=utf-8")
-	c.Status(http.StatusOK)
-	c.IndentedJSON(http.StatusOK, metrics)
 }
 
 // GetMetric получить значение метрики
-func GetMetric(c *gin.Context) {
-	splittedURL, err := urlToMap(c.Request.URL.String())
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-	}
-	val, err := initconf.Store.GetValue(splittedURL[metricType], splittedURL[metricName])
-	if err != nil {
-		fmt.Println("Error in GetMetric:", err)
-		c.Status(http.StatusNotFound)
-	} else {
-		switch v := val.(type) {
-		case float64:
-			{
-				c.String(http.StatusOK, fmt.Sprintf("%g", v))
+func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		splittedURL, err := urlToMap(c.Request.URL.String())
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+		}
+		val, err := store.GetValue(ctx, splittedURL[metricType], splittedURL[metricName])
+		if err != nil {
+			fmt.Println("Error in GetMetric:", err)
+			c.Status(http.StatusNotFound)
+		} else {
+			switch v := val.(type) {
+			case float64:
+				{
+					c.String(http.StatusOK, fmt.Sprintf("%g", v))
+				}
+			case int64:
+				c.String(http.StatusOK, fmt.Sprintf("%d", v))
 			}
-		case int64:
-			c.String(http.StatusOK, fmt.Sprintf("%d", v))
 		}
 	}
 }
 
 // GetMetricJSON получить значение метрики через JSON
-func GetMetricJSON(c *gin.Context) {
-	jsn, err := io.ReadAll(c.Request.Body)
-	log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
-	if err != nil {
-		http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
-		return
-	}
+func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		jsn, err := io.ReadAll(c.Request.Body)
+		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
+		if err != nil {
+			http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+			return
+		}
 
-	var tmpMetric internal.Metrics
+		//var tmpMetric internal.Metrics
+		var tmpMetric storage.Metrics
 
-	err = json.Unmarshal(jsn, &tmpMetric)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
-	}
+		err = json.Unmarshal(jsn, &tmpMetric)
+		if err != nil {
+			c.Status(http.StatusBadRequest)
+			return
+		}
 
-	if tmpMetric.MType == "gauge" {
-		var val float64
-		val, err = initconf.Store.GetGauge(tmpMetric.ID)
-		tmpMetric.Value = &val
-	}
-	if tmpMetric.MType == "counter" {
-		var delta int64
-		delta, err = initconf.Store.GetCounter(tmpMetric.ID)
-		tmpMetric.Delta = &delta
-	}
-	if err != nil {
-		log.Println("Requested metric value with status 404", tmpMetric)
-		c.Status(http.StatusNotFound)
-		return
-	}
+		if tmpMetric.MType == "gauge" {
+			var val float64
+			val, err = store.GetGauge(ctx, tmpMetric.ID)
+			tmpMetric.Value = &val
+		}
+		if tmpMetric.MType == "counter" {
+			var delta int64
+			delta, err = store.GetCounter(ctx, tmpMetric.ID)
+			tmpMetric.Delta = &delta
+		}
+		if err != nil {
+			log.Println("Requested metric value with status 404", tmpMetric)
+			//log.Println("error is", err)
+			c.Status(http.StatusNotFound)
+			return
+		}
 
-	resp, err := json.Marshal(tmpMetric)
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	log.Println("Requested metric value with status 200", tmpMetric)
-	j2 := io.NopCloser(bytes.NewBuffer(resp))
-	log.Println("Request value from j2:", j2)
+		resp, err := json.Marshal(tmpMetric)
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		log.Println("Requested metric value with status 200", tmpMetric)
+		j2 := io.NopCloser(bytes.NewBuffer(resp))
+		log.Println("Request value from j2:", j2)
 
-	c.Header("content-type", "application/json")
-	c.Status(http.StatusOK)
-	if _, err := c.Writer.Write(resp); err != nil {
-		log.Println("GetMetricJSON Writer.Write error:", err)
+		c.Header("content-type", "application/json")
+		c.Status(http.StatusOK)
+		if _, err := c.Writer.Write(resp); err != nil {
+			log.Println("GetMetricJSON Writer.Write error:", err)
+		}
+	}
+}
+
+func DBPing(connStr string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Тест коннекта к базе
+		log.Println("TEST Connecting to base")
+		db := database.Postgresql{}
+		err := db.Connect(connStr)
+		if err != nil {
+			log.Println("Error connecting to database :", err)
+		}
+		defer db.Close()
+		err = db.Ping()
+		if err != nil {
+			log.Println("database connect error")
+			c.Status(http.StatusInternalServerError)
+			panic(err)
+		}
+		log.Println("database connected")
+		c.Status(http.StatusOK)
+		c.Next()
 	}
 }

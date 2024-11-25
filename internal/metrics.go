@@ -11,12 +11,16 @@ import (
 	"net/http"
 	"reflect"
 	"runtime"
+	"time"
 )
 
 type MetricsStorage struct {
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
 }
+
+// Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
+var timeoutsRetryConst = [3]int{1, 3, 5}
 
 var client = &http.Client{}
 
@@ -68,7 +72,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		zb := gzip.NewWriter(&buf)
 
 		if _, err := zb.Write(b); err != nil {
-			log.Println("SendRequest. Error gzipping body:", err)
+			log.Println("SendRequest. Error gzip body:", err)
 			return nil, err
 		}
 
@@ -82,8 +86,9 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	req, err := http.NewRequest(http.MethodPost, url, body)
 
 	if err != nil {
-		log.Println("SendRequest. Panic creating request:", err)
-		panic(err)
+		log.Println("SendRequest. Error creating request:", err)
+		return nil, fmt.Errorf("%s %v", "SendRequest: http.NewRequest error.", err)
+		//panic(err)
 	}
 	if body != nil {
 		defer req.Body.Close()
@@ -95,18 +100,30 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	req.Header.Set("Content-Encoding", "compress")
 
 	log.Println("req.Header is:", req.Header)
-	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 
+	// Отсылка сформированного запроса req. Если сервер не отвечает -- работа агента завершается
 	response, err := client.Do(req)
 
-	if response != nil {
-		log.Println("response is:", response)
-		defer response.Body.Close()
-	} else if err != nil {
-		log.Println("WARNING!!!!!", err, "; response is", response)
-		panic(err)
+	if err != nil {
+		for i, t := range timeoutsRetryConst {
+			log.Println("SendRequest. Trying to recover after ", t, "seconds, attempt number ", i+1)
+			time.Sleep(time.Duration(t) * time.Second)
+			response, err = client.Do(req)
+			if err != nil {
+				log.Println("SendRequest: attempt ", i+1, " error")
+				if i == 2 {
+					//panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
+					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error.", err)
+				}
+				continue
+			}
+			return response, nil
+		}
 	}
-
+	if response != nil {
+		log.Println("SendRequest: response is:", response)
+		defer response.Body.Close()
+	}
 	return response, nil
 }
 
@@ -148,15 +165,14 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 }
 
 type Metrics struct {
-	ID    string   `json:"id"`              // имя метрики
+	ID    string   `json:"id"`              // Имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Delta *int64   `json:"delta,omitempty"` // Значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
 }
 
 func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 	count := 0
-
 	// Цикл для отсылки метрик типа gaugeMap
 	for m := range metrics.gaugeMap {
 		count++
@@ -200,26 +216,43 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 	return nil
 }
 
-// PingServer -- функция пинга сервера для решения проблемы metrictests
-func PingServer(url string, contentType string) (*http.Response, error) {
-	log.Println("PING SERVER with url", url)
-	var tmpVar int64
-	var tmpMetric = Metrics{"Ping", "counter", &tmpVar, nil}
-	payload, _ := json.Marshal(tmpMetric)
-
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload)) // без compress
-	if err != nil {
-		log.Println("Panic in PingServer(): ", err)
-		panic(err)
+func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
+	var metrics []Metrics
+	var tmpMetric Metrics
+	for k, v := range store.gaugeMap {
+		log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
+		tmpMetric.ID = k
+		tmpMetric.MType = "gauge"
+		tmpMetric.Value = &v
+		metrics = append(metrics, tmpMetric)
 	}
-
-	req.Header.Set("Content-Type", contentType)
-
-	response, err := client.Do(req)
-	if err != nil {
-		log.Println("PingServer. client.Do error: ", err)
+	for k, v := range store.counterMap {
+		tmpMetric.ID = k
+		tmpMetric.MType = "counter"
+		tmpMetric.Delta = &v
+		metrics = append(metrics, tmpMetric)
 	}
-	log.Println("response in PingServer is:", response)
+	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
+	return metrics, nil
+}
+
+func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
+	tmpMetrics, err := MemstorageToMetrics(*metrics)
+	if err != nil {
+		log.Println("Error in SendMetricsJSONBatch:", err)
+		return err
+	}
+	payload, err := json.Marshal(tmpMetrics)
+	if err != nil {
+		log.Println("SendMetricsJSONBatch error in json.Marshal: ", err)
+	}
+	log.Println("payload in SendMetricsJSONBatch is:", string(payload))
+
+	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+	if err != nil {
+		log.Println("SendMetricsJSONBatch: Error from SendRequest call:", err)
+		return err
+	}
 	defer response.Body.Close()
-	return response, err
+	return nil
 }

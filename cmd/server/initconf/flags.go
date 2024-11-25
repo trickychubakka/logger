@@ -3,8 +3,9 @@ package initconf
 import (
 	"flag"
 	"fmt"
+	"github.com/spf13/viper"
 	"log"
-	"logger/internal/storage/memstorage"
+	"logger/conf"
 	"net"
 	"net/url"
 	"os"
@@ -18,6 +19,8 @@ type Config struct {
 	StoreMetricInterval int
 	FileStoragePath     string
 	Restore             bool
+	DatabaseDSN         string
+	UseDBConfig         bool
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -26,24 +29,49 @@ func IsValidIP(ip string) bool {
 	return res != nil
 }
 
-var Store = memstorage.New()
-
-var Conf Config
-
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
+
+func readDBConfig() (string, error) {
+	dbCfg := &conf.Config{}
+	var connStr string
+	log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
+	viper.SetConfigName("dbconfig")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("./conf")
+	viper.AutomaticEnv()
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Println("Error reading conf file :", err)
+		return "", err
+	} else {
+		err = viper.Unmarshal(&dbCfg)
+		if err != nil {
+			log.Println("Error unmarshalling conf :", err)
+			return "", err
+		}
+	}
+
+	connStr = fmt.Sprintf("postgres://%s:%s@%s:5432/%s?sslmode=%s", dbCfg.Database.User, dbCfg.Database.Password, dbCfg.Database.Host, dbCfg.Database.Dbname, dbCfg.Database.Sslmode)
+	return connStr, nil
+}
 
 func InitConfig(conf *Config) error {
 
 	if !FlagTest {
+		log.Println("start parsing flags")
 		flag.StringVar(&conf.RunAddr, "a", "localhost:8080", "address and port to run server. Default localhost:8080.")
 		flag.StringVar(&conf.Logfile, "l", "", "server log file. Default empty.")
-		//flag.IntVar(&conf.StoreMetricInterval, "i", 300, "store metrics to disk interval in sec. 0 -- sync saving. Default 300 sec.")
-		flag.IntVar(&conf.StoreMetricInterval, "i", 300, "store metrics to disk interval in sec. 0 -- sync saving. Default 300 sec.")
+		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 300 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
+		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
 		flag.Parse()
 	}
+
+	log.Println("Config before env var processing:", conf)
 
 	// Пытаемся прочитать переменную окружения ADDRESS. Переменные окружения имеют приоритет перед флагами,
 	// поэтому переопределяют опции командной строки в случае, если соответствующая переменная определена в env
@@ -104,6 +132,22 @@ func InitConfig(conf *Config) error {
 		}
 		conf.Restore = tmp
 		log.Println("Using env var RESTORE=", conf.Restore)
+	}
+
+	if envDatabaseDSN := os.Getenv("DATABASE_DSN"); envDatabaseDSN != "" {
+		log.Println("env var DATABASE_DSN was specified, use DATABASE_DSN =", envDatabaseDSN)
+		conf.DatabaseDSN = envDatabaseDSN
+		log.Println("Using env var DATABASE_DSN=", conf.DatabaseDSN)
+	}
+
+	// Если DatabaseDSN нет в переменных окружения и в параметрах запуска -- пытаемся прочитать из dbconfig.yaml
+	if conf.DatabaseDSN == "" && conf.UseDBConfig {
+		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
+		if connStr, err := readDBConfig(); err != nil {
+			log.Println("Error reading dbconfig.yaml:", err)
+		} else {
+			conf.DatabaseDSN = connStr
+		}
 	}
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.RunAddr)

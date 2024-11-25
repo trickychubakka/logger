@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"logger/internal"
@@ -13,10 +14,9 @@ var conf Config
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 
-// run функция выполнения цикла поллинга метрик
+// Run функция выполнения цикла polling-а метрик
 func run(myMetrics internal.MetricsStorage) {
 
-	firstRun := true
 	for {
 		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
 			if err := internal.MetricsPolling(&myMetrics); err != nil {
@@ -26,19 +26,10 @@ func run(myMetrics internal.MetricsStorage) {
 			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
 		}
 
-		if firstRun {
-			log.Println("first run. Starting PingServer")
-			_, err := internal.PingServer("http://"+conf.address+"/update", "application/json")
-			if err != nil {
-				log.Println(err)
-			}
-		}
-		firstRun = false
-
-		if err := internal.SendMetricsJSON(&myMetrics, "http://"+conf.address+"/update"); err != nil {
-			//if err := internal.SendMetrics(&myMetrics, "http://"+conf.address+"/update"); err != nil {
-			log.Println("Error main in SendMetricsJSON:")
-			log.Println(err)
+		log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
+		if err := internal.SendMetricsJSONBatch(&myMetrics, "http://"+conf.address+"/updates"); err != nil {
+			log.Println("main: error from SendMetricsJSONBatch:", err)
+			log.Panicf("%s", errors.Unwrap(err))
 		}
 	}
 }

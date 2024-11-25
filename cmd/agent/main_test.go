@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// setEnv вспомогательная функция для установки переменных среды как параметров тестирования.
+// setEnv вспомогательная функция для установки переменных среды как параметров тестирования
 func setEnv(envAddr, envPollInterval, envReportInterval string) error {
 	if err := os.Setenv("ADDRESS", envAddr); err != nil {
 		return err
