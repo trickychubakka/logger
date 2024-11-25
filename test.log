@@ -1,0 +1,935 @@
+=== RUN   TestIteration10A
+=== RUN   TestIteration10A/TestLibraryUsage
+=== RUN   TestIteration10A/TestPingHandler
+    iteration10a_test.go:145: Не удалось получить код ответа 200 от хендлера 'GET /ping' за отведенное время
+=== NAME  TestIteration10A
+    iteration10a_test.go:99: Процесс завершился с не нулевым статусом 1
+    iteration10a_test.go:111: Получен STDOUT лог процесса:
+        
+        2024/11/08 21:09:07 start parsing flags
+        2024/11/08 21:09:07 Config before env var processing: &{localhost:8080  10 metrics.dump true }
+        2024/11/08 21:09:07 Trying to read ADDRESS environment variable (env has priority over flags):  localhost:8080
+        Using env var ADDRESS: localhost:8080
+        2024/11/08 21:09:07 env var STORE_INTERVAL was specified, use STORE_INTERVAL = 10
+        2024/11/08 21:09:07 Using env var STORE_INTERVAL= 10
+        2024/11/08 21:09:07 env var RESTORE was specified, use RESTORE = true
+        2024/11/08 21:09:07 Using env var RESTORE= true
+        2024/11/08 21:09:07 env var DATABASE_DSN was specified, use DATABASE_DSN = postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable
+        2024/11/08 21:09:07 Using env var DATABASE_DSN= postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable
+        2024/11/08 21:09:07 conf.runAddr is URI address, Using URI: localhost:8080
+        2024/11/08 21:09:07 initconf is: {localhost:8080  10 metrics.dump true postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable}
+        2024/11/08 21:09:07 storage from Load: &{map[Alloc:3.485408e+06 BuckHashSys:10072 Frees:23918 GCCPUFraction:0.0001495438154328972 GCSys:2.910488e+06 GetSet220:874377.6386529244 HeapAlloc:3.485408e+06 HeapIdle:6.7584e+06 HeapInuse:5.332992e+06 HeapObjects:9834 HeapReleased:4.808704e+06 HeapSys:1.2091392e+07 LastGC:1.7310893203276073e+18 Lookups:0 MCacheInuse:18688 MCacheSys:32704 MSpanInuse:127200 MSpanSys:130560 Mallocs:33752 NextGC:5.679664e+06 NumForcedGC:0 NumGC:10 OtherSys:1.032656e+06 PauseTotalNs:509900 RandomValue:0.2083188239403695 StackInuse:458752 StackSys:458752 Sys:1.6666624e+07 TotalAlloc:2.7863032e+07] map[GetSet228:1878743863 PollCount:1]}
+        2024/11/08 21:09:07 Init context fo goroutine (Conf.StoreMetricInterval is not 0): 10
+        2024-11-08T21:09:07.590+0300	INFO	server/main.go:98	initConfig sugar logging	{"conf.RunAddr": "localhost:8080"}
+        2024/11/08 21:09:07 Connecting to base
+        2024/11/08 21:09:07 flags or DATABASE_DSN env defined, starting db connect with this conf
+        Save metrics dump to file 2024/11/08 21:09:07 connStrMap: [postgres postgres postgres postgres 5432 praktikum sslmode=disable]
+        2024/11/08 21:09:07 p.cfg.Database is: {postgres postgres postgres praktikum disable}
+        metrics.dump with interval 10 s
+        2024/11/08 21:09:07 Connection string to database: postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable
+        2024/11/08 21:09:07 Connected to database with DSN : postgres://postgres:postgres@postgres:5432/praktikum?sslmode=disable
+        [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+        
+        [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+         - using env:	export GIN_MODE=release
+         - using code:	gin.SetMode(gin.ReleaseMode)
+        
+        [GIN-debug] GET    /                         --> main.main.GetAllMetrics.func10 (7 handlers)
+        [GIN-debug] POST   /update/:metricType/:metricName/:metricValue --> main.main.MetricsHandler.func11 (7 handlers)
+        [GIN-debug] POST   /update                   --> main.main.MetricHandlerJSON.func12 (7 handlers)
+        [GIN-debug] GET    /value/:metricType/:metricName --> main.main.GetMetric.func13 (7 handlers)
+        [GIN-debug] POST   /value                    --> main.main.GetMetricJSON.func14 (7 handlers)
+        [GIN-debug] GET    /ping                     --> main.main.DBPing.func15 (7 handlers)
+        [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+        Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+        [GIN-debug] Listening and serving HTTP on localhost:8080
+        2024/11/08 21:09:11 database connect error
+        
+        
+        [31m2024/11/08 21:09:11 [Recovery] 2024/11/08 - 21:09:11 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:11 | 500 |    2.7125592s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:12 database connect error
+        
+        
+        [31m2024/11/08 21:09:12 [Recovery] 2024/11/08 - 21:09:12 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:12 | 500 |    2.7022583s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:13 database connect error
+        
+        
+        [31m2024/11/08 21:09:13 [Recovery] 2024/11/08 - 21:09:13 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:13 | 500 |     2.706336s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:14 database connect error
+        
+        
+        [31m2024/11/08 21:09:14 [Recovery] 2024/11/08 - 21:09:14 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:14 | 500 |    2.7046319s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:15 database connect error
+        
+        
+        [31m2024/11/08 21:09:15 [Recovery] 2024/11/08 - 21:09:15 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:15 | 500 |    2.7099841s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:16 database connect error
+        
+        
+        [31m2024/11/08 21:09:16 [Recovery] 2024/11/08 - 21:09:16 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:16 | 500 |    2.6948959s |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:17 database connect error
+        
+        
+        [31m2024/11/08 21:09:17 [Recovery] 2024/11/08 - 21:09:17 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=postgres database=praktikum`: hostname resolving error: lookup postgres: no such host
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:17 | 500 |    2.6974895s |       127.0.0.1 | GET      "/ping"
+        Save metrics dump to file metrics.dump with interval 10 s
+--- FAIL: TestIteration10A (10.23s)
+    --- PASS: TestIteration10A/TestLibraryUsage (0.00s)
+    --- FAIL: TestIteration10A/TestPingHandler (10.12s)
+=== RUN   TestIteration10B
+=== RUN   TestIteration10B/TestPingHandlerWithWrongSettings
+=== NAME  TestIteration10B
+    iteration10b_test.go:93: Процесс завершился с не нулевым статусом 1
+    iteration10b_test.go:105: Получен STDOUT лог процесса:
+        
+        2024/11/08 21:09:17 start parsing flags
+        2024/11/08 21:09:17 Config before env var processing: &{localhost:8080  10 metrics.dump false }
+        2024/11/08 21:09:17 Trying to read ADDRESS environment variable (env has priority over flags):  localhost:8080
+        Using env var ADDRESS: localhost:8080
+        2024/11/08 21:09:17 env var STORE_INTERVAL was specified, use STORE_INTERVAL = 10
+        2024/11/08 21:09:17 Using env var STORE_INTERVAL= 10
+        2024/11/08 21:09:17 env var RESTORE was specified, use RESTORE = true
+        2024/11/08 21:09:17 Using env var RESTORE= true
+        2024/11/08 21:09:17 env var DATABASE_DSN was specified, use DATABASE_DSN = 'postgres://unknown:unknown@postgres:9999/praktikum?easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'
+        2024/11/08 21:09:17 Using env var DATABASE_DSN= 'postgres://unknown:unknown@postgres:9999/praktikum?easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'
+        2024/11/08 21:09:17 conf.runAddr is URI address, Using URI: localhost:8080
+        2024/11/08 21:09:17 initconf is: {localhost:8080  10 metrics.dump true 'postgres://unknown:unknown@postgres:9999/praktikum?easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'}
+        2024/11/08 21:09:17 storage from Load: &{map[Alloc:3.485408e+06 BuckHashSys:10072 Frees:23918 GCCPUFraction:0.0001495438154328972 GCSys:2.910488e+06 GetSet220:874377.6386529244 HeapAlloc:3.485408e+06 HeapIdle:6.7584e+06 HeapInuse:5.332992e+06 HeapObjects:9834 HeapReleased:4.808704e+06 HeapSys:1.2091392e+07 LastGC:1.7310893203276073e+18 Lookups:0 MCacheInuse:18688 MCacheSys:32704 MSpanInuse:127200 MSpanSys:130560 Mallocs:33752 NextGC:5.679664e+06 NumForcedGC:0 NumGC:10 OtherSys:1.032656e+06 PauseTotalNs:509900 RandomValue:0.2083188239403695 StackInuse:458752 StackSys:458752 Sys:1.6666624e+07 TotalAlloc:2.7863032e+07] map[GetSet228:1878743863 PollCount:1]}
+        2024/11/08 21:09:17 Init context fo goroutine (Conf.StoreMetricInterval is not 0): 10
+        Save metrics dump to file metrics.dump with interval 10 s
+        2024-11-08T21:09:17.822+0300	INFO	server/main.go:98	initConfig sugar logging	{"conf.RunAddr": "localhost:8080"}
+        2024/11/08 21:09:17 Connecting to base
+        2024/11/08 21:09:17 flags or DATABASE_DSN env defined, starting db connect with this conf
+        2024/11/08 21:09:17 connStrMap: ['postgres unknown unknown postgres 9999 praktikum easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments']
+        2024/11/08 21:09:17 p.cfg.Database is: {postgres unknown unknown praktikum you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'}
+        2024/11/08 21:09:17 Connection string to database: 'postgres://unknown:unknown@postgres:9999/praktikum?easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'
+        2024/11/08 21:09:17 Connected to database with DSN : 'postgres://unknown:unknown@postgres:9999/praktikum?easter_egg_msg=you_must_prefer_this_incorrect_settings_to_those_obtained_through_arguments'
+        [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+        
+        [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+         - using env:	export GIN_MODE=release
+         - using code:	gin.SetMode(gin.ReleaseMode)
+        
+        [GIN-debug] GET    /                         --> main.main.GetAllMetrics.func10 (7 handlers)
+        [GIN-debug] POST   /update/:metricType/:metricName/:metricValue --> main.main.MetricsHandler.func11 (7 handlers)
+        [GIN-debug] POST   /update                   --> main.main.MetricHandlerJSON.func12 (7 handlers)
+        [GIN-debug] GET    /value/:metricType/:metricName --> main.main.GetMetric.func13 (7 handlers)
+        [GIN-debug] POST   /value                    --> main.main.GetMetricJSON.func14 (7 handlers)
+        [GIN-debug] GET    /ping                     --> main.main.DBPing.func15 (7 handlers)
+        [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+        Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+        [GIN-debug] Listening and serving HTTP on localhost:8080
+        2024/11/08 21:09:18 database connect error
+        
+        
+        [31m2024/11/08 21:09:18 [Recovery] 2024/11/08 - 21:09:18 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:18 | 500 |      5.9589ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:19 database connect error
+        
+        
+        [31m2024/11/08 21:09:19 [Recovery] 2024/11/08 - 21:09:19 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:19 | 500 |      2.1912ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:20 database connect error
+        
+        
+        [31m2024/11/08 21:09:20 [Recovery] 2024/11/08 - 21:09:20 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:20 | 500 |      3.5413ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:21 database connect error
+        
+        
+        [31m2024/11/08 21:09:21 [Recovery] 2024/11/08 - 21:09:21 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:21 | 500 |      4.5521ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:22 database connect error
+        
+        
+        [31m2024/11/08 21:09:22 [Recovery] 2024/11/08 - 21:09:22 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:22 | 500 |      7.6808ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:23 database connect error
+        
+        
+        [31m2024/11/08 21:09:23 [Recovery] 2024/11/08 - 21:09:23 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:23 | 500 |      5.2938ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:24 database connect error
+        
+        
+        [31m2024/11/08 21:09:24 [Recovery] 2024/11/08 - 21:09:24 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:24 | 500 |      3.0318ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:25 database connect error
+        
+        
+        [31m2024/11/08 21:09:25 [Recovery] 2024/11/08 - 21:09:25 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:25 | 500 |      4.0975ms |       127.0.0.1 | GET      "/ping"
+        2024/11/08 21:09:26 database connect error
+        
+        
+        [31m2024/11/08 21:09:26 [Recovery] 2024/11/08 - 21:09:26 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:26 | 500 |      3.1323ms |       127.0.0.1 | GET      "/ping"
+        Save metrics dump to file metrics.dump with interval 10 s
+        2024/11/08 21:09:27 database connect error
+        
+        
+        [31m2024/11/08 21:09:27 [Recovery] 2024/11/08 - 21:09:27 panic recovered:
+        GET /ping HTTP/1.1
+        Host: localhost:8080
+        Accept-Encoding: gzip
+        User-Agent: go-resty/2.7.0 (https://github.com/go-resty/resty)
+        
+        
+        failed to connect to `user=Denis database=`:
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        	[::1]:5432 (localhost): dial error: dial tcp [::1]:5432: connectex: No connection could be made because the target machine actively refused it.
+        	127.0.0.1:5432 (localhost): dial error: dial tcp 127.0.0.1:5432: connectex: No connection could be made because the target machine actively refused it.
+        C:/JetBrains/GolandProjects/logger/internal/handlers/handlers.go:263 (0x5c3bfc)
+        	main.DBPing.func15: panic(err)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/metricsdump.go:60 (0x5c5168)
+        	main.SyncDumpUpdate.func9: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x591e15)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-contrib/gzip@v1.0.1/handler.go:60 (0x591dfd)
+        	(*gzipHandler).Handle: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4b7daa)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/JetBrains/GolandProjects/logger/internal/logging/logging.go:13 (0x5c52ce)
+        	main.WithLogging.func8: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bd539)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/recovery.go:102 (0x4bd527)
+        	CustomRecoveryWithWriter.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bc664)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/logger.go:249 (0x4bc64b)
+        	LoggerWithConfig.func1: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/context.go:185 (0x4bba91)
+        	(*Context).Next: c.handlers[c.index](c)
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:633 (0x4bb500)
+        	(*Engine).handleHTTPRequest: c.Next()
+        C:/Users/Denis/go/pkg/mod/github.com/gin-gonic/gin@v1.10.0/gin.go:589 (0x4bb191)
+        	(*Engine).ServeHTTP: engine.handleHTTPRequest(c)
+        C:/Program Files/Go/src/net/http/server.go:3142 (0x34960d)
+        	serverHandler.ServeHTTP: handler.ServeHTTP(rw, req)
+        C:/Program Files/Go/src/net/http/server.go:2044 (0x345be7)
+        	(*conn).serve: serverHandler{c.server}.ServeHTTP(w, w.req)
+        C:/Program Files/Go/src/runtime/asm_amd64.s:1695 (0x13d920)
+        	goexit: BYTE	$0x90	// NOP
+        [0m
+        [GIN] 2024/11/08 - 21:09:27 | 500 |      7.4829ms |       127.0.0.1 | GET      "/ping"
+--- PASS: TestIteration10B (10.14s)
+    --- PASS: TestIteration10B/TestPingHandlerWithWrongSettings (10.01s)
+FAIL
