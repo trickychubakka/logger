@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var conf Config
-
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 
@@ -18,16 +16,16 @@ var FlagTest = false
 func run(myMetrics internal.MetricsStorage) {
 
 	for {
-		for i := 0; i < conf.reportInterval; i = i + conf.pollInterval {
+		for i := 0; i < config.ReportInterval; i = i + config.PollInterval {
 			if err := internal.MetricsPolling(&myMetrics); err != nil {
 				log.Println(err)
 			}
 			log.Println("\nmetrics:", myMetrics)
-			time.Sleep(time.Duration(conf.pollInterval) * time.Second)
+			time.Sleep(time.Duration(config.PollInterval) * time.Second)
 		}
 
 		log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
-		if err := internal.SendMetricsJSONBatch(&myMetrics, "http://"+conf.address+"/updates"); err != nil {
+		if err := internal.SendMetricsJSONBatch(&myMetrics, "http://"+config.Address+"/updates", &config); err != nil {
 			log.Println("main: error from SendMetricsJSONBatch:", err)
 			log.Panicf("%s", errors.Unwrap(err))
 		}
@@ -36,12 +34,12 @@ func run(myMetrics internal.MetricsStorage) {
 
 func main() {
 
-	if err := initConfig(&conf); err != nil {
+	if err := initConfig(&config); err != nil {
 		log.Println("AGENT Panic from initConfig", err)
 		panic(err)
 	}
 
-	if conf.logfile != "" {
+	if config.Logfile != "" {
 		file, err := os.OpenFile("agent.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal("Failed to open log file:", err)
@@ -50,7 +48,7 @@ func main() {
 		defer file.Close()
 	}
 
-	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.address, conf.pollInterval, conf.reportInterval, conf.logfile)
+	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", config.Address, config.PollInterval, config.ReportInterval, config.Logfile)
 
 	myMetrics := internal.NewMetricsStorageObj()
 

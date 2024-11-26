@@ -3,16 +3,27 @@ package internal
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"logger/conf"
 	"math/rand"
 	"net/http"
 	"reflect"
 	"runtime"
 	"time"
 )
+
+//type Config struct {
+//	pollInterval   int
+//	reportInterval int
+//	address        string
+//	logfile        string
+//}
 
 type MetricsStorage struct {
 	gaugeMap   map[string]float64
@@ -58,7 +69,25 @@ func MetricsPolling(metrics *MetricsStorage) error {
 	return nil
 }
 
-func SendRequest(client *http.Client, url string, body io.Reader, contentType string) (*http.Response, error) {
+// hashBody функция подписи body отсылаемого сообщения
+// Если ключ задан (не равен "" в AgentConfig) -- возвращаем hash, true
+// Если ключ не задан -- возвращаем nil, false
+func hashBody(body []byte, config *conf.AgentConfig) ([]byte, bool) {
+	if config.Key == "" {
+		log.Println("config.Key is empty")
+		return nil, false
+	}
+	h := hmac.New(sha256.New, []byte(config.Key))
+	h.Write(body)
+	dst := h.Sum(nil)
+	fmt.Printf("%x", dst)
+	return dst, true
+}
+
+func SendRequest(client *http.Client, url string, body io.Reader, contentType string, config *conf.AgentConfig) (*http.Response, error) {
+
+	var hash []byte
+	var keyBool bool
 
 	if body != nil {
 
@@ -80,7 +109,17 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		if err != nil {
 			log.Println("SendRequest. Error closing compress writer:", err)
 		}
-		body = bytes.NewReader(buf.Bytes())
+
+		rawBody := buf.Bytes()
+		//body = bytes.NewReader(buf.Bytes())
+		body = bytes.NewReader(rawBody)
+		// Считаем hash256 body ПОСЛЕ gzip-упаковки
+		hash, keyBool = hashBody(rawBody, config)
+		log.Println("hash is:", hash, "keyBool is :", keyBool)
+		if err != nil {
+			log.Println("SendRequest. Error hashing body:", err)
+		}
+		log.Printf("HashSHA256 is : %x", hash)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -96,6 +135,10 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 
 	req.Close = true
 
+	// Устанавливаем Header key HashSHA256, если key определен
+	if keyBool {
+		req.Header.Set("HashSHA256", hex.EncodeToString(hash))
+	}
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Content-Encoding", "compress")
 
@@ -128,7 +171,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 }
 
 // SendMetrics отсылка метрик на сервер
-func SendMetrics(metrics *MetricsStorage, c string) error {
+func SendMetrics(metrics *MetricsStorage, c string, config *conf.AgentConfig) error {
 	count := 0
 
 	// Цикл для отсылки метрик типа gaugeMap
@@ -137,7 +180,7 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		reqURL := c + "/gauge/" + m + "/" + fmt.Sprintf("%v", metrics.gaugeMap[m])
 		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "count:", count)
 
-		response, err := SendRequest(client, reqURL, nil, "text/plain")
+		response, err := SendRequest(client, reqURL, nil, "text/plain", config)
 		if err != nil {
 			return err
 		}
@@ -152,7 +195,7 @@ func SendMetrics(metrics *MetricsStorage, c string) error {
 		reqURL := c + "/counter/" + m + "/" + fmt.Sprintf("%v", metrics.counterMap[m])
 		log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "count:", count)
 
-		response, err := SendRequest(client, reqURL, nil, "text/plain")
+		response, err := SendRequest(client, reqURL, nil, "text/plain", config)
 		if err != nil {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
@@ -171,7 +214,7 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
 }
 
-func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
+func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
 	count := 0
 	// Цикл для отсылки метрик типа gaugeMap
 	for m := range metrics.gaugeMap {
@@ -185,7 +228,7 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 		if err != nil {
 			return err
 		}
-		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 		if err != nil {
 			log.Println("Error Send Metrics in SendRequest call:", err)
 			return err
@@ -205,7 +248,7 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string) error {
 			return err
 		}
 
-		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+		response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 
 		if err != nil {
 			log.Println("Error in SendMetricsJSON from SendRequest", err)
@@ -236,7 +279,7 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 	return metrics, nil
 }
 
-func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
+func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
 	tmpMetrics, err := MemstorageToMetrics(*metrics)
 	if err != nil {
 		log.Println("Error in SendMetricsJSONBatch:", err)
@@ -248,7 +291,7 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string) error {
 	}
 	log.Println("payload in SendMetricsJSONBatch is:", string(payload))
 
-	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json")
+	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 	if err != nil {
 		log.Println("SendMetricsJSONBatch: Error from SendRequest call:", err)
 		return err

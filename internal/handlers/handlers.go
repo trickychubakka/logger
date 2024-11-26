@@ -3,6 +3,9 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -66,6 +69,18 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> stor :", stor)
 	return stor, nil
 }
+
+//func hashBody(body []byte, config *initconf.Config) ([]byte, bool) {
+//	if config.Key == "" {
+//		log.Println("config.Key is empty")
+//		return nil, false
+//	}
+//	h := hmac.New(sha256.New, []byte(config.Key))
+//	h.Write(body)
+//	dst := h.Sum(nil)
+//	fmt.Printf("%x", dst)
+//	return dst, true
+//}
 
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
 func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
@@ -166,6 +181,11 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+		}
+
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 
@@ -178,8 +198,23 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 	}
 }
 
+func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
+	if config.Key == "" {
+		log.Println("config.Key is empty")
+		return nil
+	}
+	h := hmac.New(sha256.New, []byte(config.Key))
+	h.Write(body)
+	hash := h.Sum(nil)
+	fmt.Printf("%x", hash)
+	log.Println("hash is:", hash)
+	log.Printf("HashSHA256 is : %x", hash)
+	c.Header("HashSHA256", hex.EncodeToString(hash))
+	return nil
+}
+
 // MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
-func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFunc {
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -216,6 +251,21 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFu
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+
+		//hash, keyBool := hashBody(resp, conf, c)
+		//log.Println("hash is:", hash, "keyBool is :", keyBool)
+		//if err != nil {
+		//	log.Println("MetricHandlerBatchUpdate. Error hashing response body:", err)
+		//}
+		//log.Printf("HashSHA256 is : %x", hash)
+		//if keyBool {
+		//	c.Header("HashSHA256", hex.EncodeToString(hash))
+		//}
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+		}
+
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 
@@ -265,7 +315,7 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 }
 
 // GetMetricJSON получить значение метрики через JSON
-func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
+func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
@@ -305,6 +355,11 @@ func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+		}
+
 		log.Println("Requested metric value with status 200", tmpMetric)
 		j2 := io.NopCloser(bytes.NewBuffer(resp))
 		log.Println("Request value from j2:", j2)
