@@ -140,21 +140,31 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 						return
 					}
 				}
+				// Ввиду того, что c.Request.Body был вычитан s body с помощью io.ReadAll -- делаем его копию для передачи в gz
 				newBody = bytes.NewReader(body)
 				gz, err = gzip.NewReader(newBody)
+				if err != nil {
+					log.Println("Error in GzipRequestHandle:", err)
+					c.Status(http.StatusInternalServerError)
+					return
+				}
 			} else {
 				gz, err = gzip.NewReader(c.Request.Body)
+				if err != nil {
+					log.Println("Error in GzipRequestHandle:", err)
+					c.Status(http.StatusInternalServerError)
+					return
+				}
 			}
 			log.Println("compress decompression")
-			// Ввиду того, что c.Request.Body был вычитан s body с помощью io.ReadAll -- делаем его копию для передачи в gz
 			//bodyCopy := bytes.NewReader(body)
 			//gz, err := gzip.NewReader(c.Request.Body)
 			//gz, err := gzip.NewReader(bodyCopy)
-			if err != nil {
-				log.Println("Error in GzipRequestHandle:", err)
-				c.Status(http.StatusInternalServerError)
-				return
-			}
+			//if err != nil {
+			//	log.Println("Error in GzipRequestHandle:", err)
+			//	c.Status(http.StatusInternalServerError)
+			//	return
+			//}
 			defer gz.Close()
 			c.Request.Body = gz
 			c.Next()
