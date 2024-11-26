@@ -120,6 +120,8 @@ func checkSign(body []byte, hash string, config *initconf.Config) (bool, error) 
 func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body []byte
+		var newBody *bytes.Reader
+		var gz *gzip.Reader
 		var err error
 		if c.Request.Header.Get(`Content-Encoding`) == `compress` {
 			log.Println("c.Request.Header.Get(\"HashSHA256\") is :", c.Request.Header.Get("HashSHA256"))
@@ -138,12 +140,16 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 						return
 					}
 				}
+				newBody = bytes.NewReader(body)
+				gz, err = gzip.NewReader(newBody)
+			} else {
+				gz, err = gzip.NewReader(c.Request.Body)
 			}
 			log.Println("compress decompression")
 			// Ввиду того, что c.Request.Body был вычитан s body с помощью io.ReadAll -- делаем его копию для передачи в gz
-			bodyCopy := bytes.NewReader(body)
+			//bodyCopy := bytes.NewReader(body)
 			//gz, err := gzip.NewReader(c.Request.Body)
-			gz, err := gzip.NewReader(bodyCopy)
+			//gz, err := gzip.NewReader(bodyCopy)
 			if err != nil {
 				log.Println("Error in GzipRequestHandle:", err)
 				c.Status(http.StatusInternalServerError)
