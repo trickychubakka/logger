@@ -68,8 +68,8 @@ func InitConfig(conf *Config) error {
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
 		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
-		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
-		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
+		flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
+		//flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
 		flag.Parse()
 	}

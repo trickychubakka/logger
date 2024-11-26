@@ -2,6 +2,7 @@ package internal
 
 import (
 	"github.com/stretchr/testify/assert"
+	"logger/conf"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -60,6 +61,7 @@ func TestSendMetrics(t *testing.T) {
 	type args struct {
 		metrics *MetricsStorage
 		c       string
+		config  *conf.AgentConfig
 	}
 	metrics := MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -96,7 +98,7 @@ func TestSendMetrics(t *testing.T) {
 			}))
 			defer server.Close()
 
-			if err := SendMetrics(tt.args.metrics, server.URL+tt.args.c); (err != nil) != tt.wantErr {
+			if err := SendMetrics(tt.args.metrics, server.URL+tt.args.c, tt.args.config); (err != nil) != tt.wantErr {
 				t.Errorf("SendMetrics() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
@@ -107,6 +109,7 @@ func TestSendRequest(t *testing.T) {
 	type args struct {
 		client *http.Client
 		url    string
+		config *conf.AgentConfig
 	}
 	type want struct {
 		code        int
@@ -146,7 +149,7 @@ func TestSendRequest(t *testing.T) {
 			}))
 
 			defer server.Close()
-			res, err := SendRequest(tt.args.client, server.URL+tt.args.url, nil, "text/plain")
+			res, err := SendRequest(tt.args.client, server.URL+tt.args.url, nil, "text/plain", tt.args.config)
 			assert.Equal(t, tt.want.code, res.StatusCode)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
