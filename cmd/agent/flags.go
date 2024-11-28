@@ -36,6 +36,7 @@ func initConfig(conf *conf.AgentConfig) error {
 		AddressFlag        string
 		LogFileFlag        string
 		key                string
+		RateLimitFlag      string
 	)
 
 	// Парсинг параметров командной строки
@@ -45,9 +46,10 @@ func initConfig(conf *conf.AgentConfig) error {
 		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определить флаг -l
-		flag.StringVar(&LogFileFlag, "l", "", "agent log file")
-		flag.StringVar(&key, "k", "", "key")
-		//flag.StringVar(&key, "k", "superkey", "key")
+		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
+		//flag.StringVar(&key, "k", "", "key")
+		flag.StringVar(&key, "k", "superkey", "key")
+		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
 
 		flag.Parse()
 	}
@@ -110,6 +112,16 @@ func initConfig(conf *conf.AgentConfig) error {
 	}
 	conf.Key = key
 
-	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile)
+	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
+		log.Println("KEY env var specified, ", envRateLimit)
+		RateLimitFlag = envRateLimit
+	}
+	if c, err := strconv.Atoi(RateLimitFlag); err == nil {
+		conf.RateLimit = c
+	} else {
+		return err
+	}
+
+	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s, RateLimit id %d \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile, conf.RateLimit)
 	return nil
 }

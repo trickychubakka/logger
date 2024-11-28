@@ -4,8 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"logger/conf"
 	"logger/internal"
 	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -13,7 +17,7 @@ import (
 var FlagTest = false
 
 // Run функция выполнения цикла polling-а метрик
-func run(myMetrics internal.MetricsStorage) {
+func runOLD(myMetrics internal.MetricsStorage, _ *conf.AgentConfig) {
 
 	for {
 		for i := 0; i < config.ReportInterval; i = i + config.PollInterval {
@@ -30,6 +34,85 @@ func run(myMetrics internal.MetricsStorage) {
 			log.Panicf("%s", errors.Unwrap(err))
 		}
 	}
+}
+
+func metricsPolling(m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start metricsPolling goroutine")
+	for {
+		m.RLock()
+		if err := internal.MetricsPolling(myMetrics); err != nil {
+			log.Println("error in metricsPolling :", err)
+			return err
+		}
+		m.RUnlock()
+		log.Println("\nmetrics:", myMetrics)
+		time.Sleep(time.Duration(config.PollInterval) * time.Second)
+	}
+	//log.Println("stop metricsPolling goroutine")
+	//return nil
+}
+
+func gopsMetricsPolling(m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start gopsMetricsPolling goroutine")
+	for {
+		m.RLock()
+		if err := internal.GopsMetricPolling(myMetrics); err != nil {
+			log.Println("error in metricsPolling :", err)
+			return err
+		}
+		m.RUnlock()
+		log.Println("\nmetrics:", myMetrics)
+		time.Sleep(time.Duration(config.PollInterval) * time.Second)
+	}
+	//log.Println("stop gopsMetricsPolling goroutine")
+	//return nil
+}
+
+func metricsReport(myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start metricsReport goroutine")
+	for {
+		time.Sleep(time.Duration(config.ReportInterval) * time.Second)
+		log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
+		if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
+			log.Println("main: error from SendMetricsJSONBatch:", err)
+			log.Panicf("%s", errors.Unwrap(err))
+		}
+	}
+	//log.Println("stop metricsReport goroutine")
+	return nil
+}
+
+func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
+	var m sync.RWMutex
+
+	go func() {
+		err := metricsPolling(&m, &myMetrics, config)
+		if err != nil {
+			log.Panicf("%s", errors.Unwrap(err))
+		}
+	}()
+
+	go func() {
+		err := gopsMetricsPolling(&m, &myMetrics, config)
+		if err != nil {
+			log.Panicf("%s", errors.Unwrap(err))
+		}
+	}()
+
+	log.Println("start metricsReport")
+	go func() {
+		err := metricsReport(&myMetrics, config)
+		if err != nil {
+			log.Panicf("%s", errors.Unwrap(err))
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+	log.Println("AGENT STOPPED!!!")
+	os.Exit(1)
+
 }
 
 func main() {
@@ -58,8 +141,10 @@ func main() {
 			log.Println("Panic recovering -> main:", err)
 			log.Println("recovered from panic in main")
 		}
-		run(myMetrics)
+		run(myMetrics, &config)
+		//run(&myMetrics, &config)
 	}()
 
-	run(myMetrics)
+	run(myMetrics, &config)
+	//run(&myMetrics, &config)
 }

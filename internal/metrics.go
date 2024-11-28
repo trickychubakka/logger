@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 	"io"
 	"log"
 	"logger/conf"
@@ -65,6 +67,25 @@ func MetricsPolling(metrics *MetricsStorage) error {
 	}
 	metrics.counterMap["PollCount"] = 1
 	metrics.gaugeMap["RandomValue"] = rand.Float64()
+
+	return nil
+}
+
+func GopsMetricPolling(metrics *MetricsStorage) error {
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		log.Println("GopsMetricPolling error in mem.VirtualMemory()")
+		return err
+	}
+	metrics.gaugeMap["TotalMemory"] = float64(v.Total)
+	metrics.gaugeMap["FreeMemory"] = float64(v.Free)
+
+	c, err := cpu.Percent(0, false)
+	if err != nil {
+		log.Println("GopsMetricPolling error in cpu.Percent(0, false)")
+		return err
+	}
+	metrics.gaugeMap["CPUutilization1"] = c[0]
 
 	return nil
 }
@@ -263,7 +284,7 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 	var metrics []Metrics
 	var tmpMetric Metrics
 	for k, v := range store.gaugeMap {
-		log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
+		//log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
 		tmpMetric.ID = k
 		tmpMetric.MType = "gauge"
 		tmpMetric.Value = &v
