@@ -12,13 +12,6 @@ import (
 	"strings"
 )
 
-//type Config struct {
-//	pollInterval   int
-//	reportInterval int
-//	address        string
-//	logfile        string
-//}
-
 var config conf.AgentConfig
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -47,8 +40,7 @@ func initConfig(conf *conf.AgentConfig) error {
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определить флаг -l
 		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
-		//flag.StringVar(&key, "k", "", "key")
-		flag.StringVar(&key, "k", "superkey", "key")
+		flag.StringVar(&key, "k", "", "key")
 		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
 
 		flag.Parse()

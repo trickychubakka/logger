@@ -48,8 +48,6 @@ func metricsPolling(m *sync.RWMutex, myMetrics *internal.MetricsStorage, config 
 		log.Println("\nmetrics:", myMetrics)
 		time.Sleep(time.Duration(config.PollInterval) * time.Second)
 	}
-	//log.Println("stop metricsPolling goroutine")
-	//return nil
 }
 
 func gopsMetricsPolling(m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
@@ -64,8 +62,6 @@ func gopsMetricsPolling(m *sync.RWMutex, myMetrics *internal.MetricsStorage, con
 		log.Println("\nmetrics:", myMetrics)
 		time.Sleep(time.Duration(config.PollInterval) * time.Second)
 	}
-	//log.Println("stop gopsMetricsPolling goroutine")
-	//return nil
 }
 
 func metricsReport(myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
@@ -78,8 +74,6 @@ func metricsReport(myMetrics *internal.MetricsStorage, config *conf.AgentConfig)
 			log.Panicf("%s", errors.Unwrap(err))
 		}
 	}
-	//log.Println("stop metricsReport goroutine")
-	//return nil
 }
 
 func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
@@ -142,9 +136,7 @@ func main() {
 			log.Println("recovered from panic in main")
 		}
 		run(myMetrics, &config)
-		//run(&myMetrics, &config)
 	}()
 
 	run(myMetrics, &config)
-	//run(&myMetrics, &config)
 }

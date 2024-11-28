@@ -20,13 +20,6 @@ import (
 	"time"
 )
 
-//type Config struct {
-//	pollInterval   int
-//	reportInterval int
-//	address        string
-//	logfile        string
-//}
-
 type MetricsStorage struct {
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
@@ -284,7 +277,6 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 	var metrics []Metrics
 	var tmpMetric Metrics
 	for k, v := range store.gaugeMap {
-		//log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
 		tmpMetric.ID = k
 		tmpMetric.MType = "gauge"
 		tmpMetric.Value = &v
