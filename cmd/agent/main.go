@@ -79,7 +79,7 @@ func metricsReport(myMetrics *internal.MetricsStorage, config *conf.AgentConfig)
 		}
 	}
 	//log.Println("stop metricsReport goroutine")
-	return nil
+	//return nil
 }
 
 func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
