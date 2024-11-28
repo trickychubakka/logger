@@ -157,9 +157,7 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 				}
 			}
 			log.Println("compress decompression")
-			//bodyCopy := bytes.NewReader(body)
 			//gz, err := gzip.NewReader(c.Request.Body)
-			//gz, err := gzip.NewReader(bodyCopy)
 			//if err != nil {
 			//	log.Println("Error in GzipRequestHandle:", err)
 			//	c.Status(http.StatusInternalServerError)

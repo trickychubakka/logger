@@ -70,17 +70,21 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	return stor, nil
 }
 
-//func hashBody(body []byte, config *initconf.Config) ([]byte, bool) {
-//	if config.Key == "" {
-//		log.Println("config.Key is empty")
-//		return nil, false
-//	}
-//	h := hmac.New(sha256.New, []byte(config.Key))
-//	h.Write(body)
-//	dst := h.Sum(nil)
-//	fmt.Printf("%x", dst)
-//	return dst, true
-//}
+// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context
+func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
+	if config.Key == "" {
+		log.Println("config.Key is empty")
+		return nil
+	}
+	h := hmac.New(sha256.New, []byte(config.Key))
+	h.Write(body)
+	hash := h.Sum(nil)
+	fmt.Printf("%x", hash)
+	log.Println("hash is:", hash)
+	log.Printf("HashSHA256 is : %x", hash)
+	c.Header("HashSHA256", hex.EncodeToString(hash))
+	return nil
+}
 
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
 func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
@@ -198,21 +202,6 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 	}
 }
 
-func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
-	if config.Key == "" {
-		log.Println("config.Key is empty")
-		return nil
-	}
-	h := hmac.New(sha256.New, []byte(config.Key))
-	h.Write(body)
-	hash := h.Sum(nil)
-	fmt.Printf("%x", hash)
-	log.Println("hash is:", hash)
-	log.Printf("HashSHA256 is : %x", hash)
-	c.Header("HashSHA256", hex.EncodeToString(hash))
-	return nil
-}
-
 // MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
 func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -251,16 +240,6 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initcon
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-
-		//hash, keyBool := hashBody(resp, conf, c)
-		//log.Println("hash is:", hash, "keyBool is :", keyBool)
-		//if err != nil {
-		//	log.Println("MetricHandlerBatchUpdate. Error hashing response body:", err)
-		//}
-		//log.Printf("HashSHA256 is : %x", hash)
-		//if keyBool {
-		//	c.Header("HashSHA256", hex.EncodeToString(hash))
-		//}
 
 		if err := hashBody(resp, conf, c); err != nil {
 			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
