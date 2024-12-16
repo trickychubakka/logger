@@ -36,7 +36,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
 	if !FlagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port to run server")
-		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
+		flag.StringVar(&ReportIntervalFlag, "r", "8", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определить флаг -l
 		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
@@ -89,7 +89,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	}
 
 	// LogFile processing
-	// Для логирования агента в лог файл необходимо определеить переменную окружения AGENT_LOG
+	// Для логирования агента в лог файл необходимо определить переменную окружения AGENT_LOG
 	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
 	if envLogFileFlag := os.Getenv("AGENT_LOG"); envLogFileFlag != "" {
 		log.Println("env var AGENT_LOG was specified, use AGENT_LOG =", envLogFileFlag)
