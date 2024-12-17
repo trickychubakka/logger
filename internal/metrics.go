@@ -141,11 +141,13 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	if err != nil {
 		log.Println("SendRequest. Error creating request:", err)
 		return nil, fmt.Errorf("%s %v", "SendRequest: http.NewRequest error.", err)
-		//panic(err)
 	}
 	if body != nil {
 		defer req.Body.Close()
 	}
+	//else {
+	//	log.Println("BODY is nil")
+	//}
 
 	req.Close = true
 
@@ -162,15 +164,16 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	response, err := client.Do(req)
 
 	if err != nil {
+		log.Println("SendRequest error in 1 attempt. Error is:", err)
 		for i, t := range timeoutsRetryConst {
 			log.Println("SendRequest. Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			response, err = client.Do(req)
 			if err != nil {
-				log.Println("SendRequest: attempt ", i+1, " error")
+				log.Println("SendRequest: attempt ", i+1, " error is", err)
 				if i == 2 {
 					//panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
-					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error.", err)
+					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error", err)
 				}
 				continue
 			}
@@ -288,7 +291,7 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 		tmpMetric.Delta = &v
 		metrics = append(metrics, tmpMetric)
 	}
-	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
+	//log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
 	return metrics, nil
 }
 
@@ -302,7 +305,7 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.A
 	if err != nil {
 		log.Println("SendMetricsJSONBatch error in json.Marshal: ", err)
 	}
-	log.Println("payload in SendMetricsJSONBatch is:", string(payload))
+	//log.Println("payload in SendMetricsJSONBatch is:", string(payload))
 
 	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 	if err != nil {
