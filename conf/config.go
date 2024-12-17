@@ -16,4 +16,5 @@ type AgentConfig struct {
 	Address        string
 	Logfile        string
 	Key            string
+	RateLimit      int
 }

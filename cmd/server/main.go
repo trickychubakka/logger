@@ -113,16 +113,19 @@ func main() {
 	}
 	defer store.Close()
 
-	// Сохранение дампа memstorage при остановке
+	// Остановка сервера и сохранение дампа memstorage при остановке, если используется memstorage
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := internal.Save(ctx, store, conf.FileStoragePath)
-		if err != nil {
-			return
+		// Если для хранения метрик не используется БД -- делаем DUMP метрик на диск
+		if conf.DatabaseDSN == "" {
+			err := internal.Save(ctx, store, conf.FileStoragePath)
+			if err != nil {
+				log.Println("Save metric DUMP error:", err)
+			}
 		}
-		log.Println("SERVER STOPPED!!!")
+		log.Println("SERVER STOPPED.")
 		os.Exit(1)
 	}()
 
@@ -189,5 +192,5 @@ func main() {
 		cancelDUMP()
 	}
 
-	log.Println("SERVER STOP!!!")
+	log.Println("SERVER STOPPED.")
 }
