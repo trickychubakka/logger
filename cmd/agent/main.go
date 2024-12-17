@@ -1,14 +1,159 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
+	"logger/conf"
 	"logger/internal"
 	"os"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
+	"time"
 )
 
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
+
+// Максимально допустимое количество ошибок подключения к серверу client.Do error
+const clientDoErrors int = 3
+
+// metricsPolling функция сбора метрик
+func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start metricsPolling goroutine")
+	counter := 1
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("STOP metricsPolling goroutine")
+			return nil
+		default:
+			if counter == config.PollInterval {
+				log.Println("metricsPolling goroutine polling")
+				m.Lock()
+				if err := internal.MetricsPolling(myMetrics); err != nil {
+					log.Println("error in metricsPolling :", err)
+					return err
+				}
+				m.Unlock()
+				counter = 0
+			}
+			time.Sleep(1 * time.Second)
+			counter++
+		}
+	}
+}
+
+// gopsMetricsPolling функция сбора метрик, собранных через gopsutil
+func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start gopsMetricsPolling goroutine")
+	counter := 1
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("STOP gopsMetricsPolling goroutine")
+			return nil
+		default:
+			if counter == config.PollInterval {
+				log.Println("gopsMetricsPolling goroutine polling")
+				m.Lock()
+				if err := internal.GopsMetricPolling(myMetrics); err != nil {
+					log.Println("error in metricsPolling :", err)
+					return err
+				}
+				m.Unlock()
+				counter = 0
+			}
+			time.Sleep(1 * time.Second)
+			counter++
+		}
+	}
+}
+
+// metricReport функция отсылки метрик на сервер
+func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+	log.Println("start metricsReport goroutine")
+	counter := 1
+	errorCount := 0
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("STOP metricsReport goroutine")
+			return nil
+		default:
+			if counter == config.ReportInterval {
+				log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
+				m.RLock()
+				if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
+					// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err
+					// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount
+					// Если это не client.Do ошибка -- сразу возвращаем error
+					if strings.Contains(err.Error(), "client.Do error") && errorCount >= clientDoErrors {
+						log.Println("main: client.Do error from SendMetricsJSONBatch:", err, "errorCount > 3, raise panic")
+						return err
+					}
+					if !strings.Contains(err.Error(), "client.Do error") {
+						log.Println("metricsReport, error from SendMetricsJSONBatch:", err)
+						return err
+					}
+					log.Println("metricsReport, client.Do error from SendMetricsJSONBatch:", err, "errorCount is", errorCount, " ignore this error")
+					errorCount++
+				}
+				m.RUnlock()
+				counter = 0
+			}
+			time.Sleep(1 * time.Second)
+			counter++
+		}
+	}
+}
+
+// Run функция запуска горутин polling-а метрик и их отсылки на сервер
+func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
+	ctx, cancel := context.WithCancel(context.Background())
+	var m sync.RWMutex
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := metricsPolling(ctx, &m, &myMetrics, config)
+		if err != nil {
+			log.Panicf("metricsPolling error %s", errors.Unwrap(err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := gopsMetricsPolling(ctx, &m, &myMetrics, config)
+		if err != nil {
+			log.Panicf("gopsMetricsPolling error %s", errors.Unwrap(err))
+		}
+	}()
+
+	log.Println("start metricsReport")
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := metricsReport(ctx, &m, &myMetrics, config)
+		if err != nil {
+			log.Panicf("metricsReport error %s", errors.Unwrap(err))
+		}
+	}()
+
+	exit := make(chan os.Signal, 1)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+	<-exit
+	cancel()
+	wg.Wait()
+	log.Println("Main done")
+	log.Println("AGENT STOPPED.")
+	os.Exit(1)
+}
 
 func main() {
 
