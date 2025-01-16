@@ -117,8 +117,8 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 	}
 }
 
-// startHttpServer -- start HTTP server for pprof
-func startHttpServer(wg *sync.WaitGroup) *http.Server {
+// startHTTPServer -- start HTTP server for pprof
+func startHTTPServer(wg *sync.WaitGroup) *http.Server {
 	srv := &http.Server{Addr: addr}
 
 	go func() {
@@ -127,7 +127,7 @@ func startHttpServer(wg *sync.WaitGroup) *http.Server {
 		// always returns error. ErrServerClosed on graceful close
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			// unexpected error. port in use?
-			log.Fatalf("startHttpServer ListenAndServe(): %v", err)
+			log.Fatalf("startHTTPServer ListenAndServe(): %v", err)
 		}
 	}()
 	// returning reference so caller can call Shutdown()
@@ -172,7 +172,7 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 	if config.PProfHTTPEnabled {
 		log.Println("start pprof web server")
 		wg.Add(1)
-		srv = startHttpServer(&wg)
+		srv = startHTTPServer(&wg)
 	}
 
 	exit := make(chan os.Signal, 1)
