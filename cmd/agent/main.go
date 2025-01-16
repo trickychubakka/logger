@@ -7,6 +7,8 @@ import (
 	"log"
 	"logger/conf"
 	"logger/internal"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,8 +20,12 @@ import (
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 
-// Максимально допустимое количество ошибок подключения к серверу client.Do error
-const clientDoErrors int = 3
+const (
+	clientDoErrors int = 3       // Максимально допустимое количество ошибок подключения к серверу client.Do error
+	addr               = ":6060" // For pprof HTTP server
+)
+
+var srv *http.Server
 
 // metricsPolling функция сбора метрик
 func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
@@ -85,8 +91,8 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 			return nil
 		default:
 			if counter == config.ReportInterval {
-				log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
 				m.RLock()
+				log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
 				if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
 					// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err
 					// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount
@@ -109,6 +115,23 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 			counter++
 		}
 	}
+}
+
+// startHttpServer -- start HTTP server for pprof
+func startHttpServer(wg *sync.WaitGroup) *http.Server {
+	srv := &http.Server{Addr: addr}
+
+	go func() {
+		defer wg.Done() // let main know we are done cleaning up
+
+		// always returns error. ErrServerClosed on graceful close
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			// unexpected error. port in use?
+			log.Fatalf("startHttpServer ListenAndServe(): %v", err)
+		}
+	}()
+	// returning reference so caller can call Shutdown()
+	return srv
 }
 
 // Run функция запуска горутин polling-а метрик и их отсылки на сервер
@@ -145,9 +168,24 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 		}
 	}()
 
+	//starting pprof http.server
+	if config.PProfHTTPEnabled {
+		log.Println("start pprof web server")
+		wg.Add(1)
+		srv = startHttpServer(&wg)
+	}
+
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 	<-exit
+	// Graceful shutdown pprof http server if option -t enabled
+	if config.PProfHTTPEnabled {
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Println("run, failure/timeout shutting down the server gracefully, error is:", err)
+		} else {
+			log.Println("run, pprof http.server shutdown gracefully")
+		}
+	}
 	cancel()
 	wg.Wait()
 	log.Println("Main done")

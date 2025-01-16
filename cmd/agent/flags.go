@@ -42,6 +42,7 @@ func initConfig(conf *conf.AgentConfig) error {
 		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
 		flag.StringVar(&key, "k", "", "key")
 		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
+		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
 
 		flag.Parse()
 	}

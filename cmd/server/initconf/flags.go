@@ -22,6 +22,7 @@ type Config struct {
 	DatabaseDSN         string
 	UseDBConfig         bool
 	Key                 string
+	PProfHTTPEnabled    bool
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -71,6 +72,7 @@ func InitConfig(conf *Config) error {
 		flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
 		flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
+		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
 		flag.Parse()
 	}
 

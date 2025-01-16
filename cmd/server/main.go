@@ -6,10 +6,12 @@ import (
 	"logger/internal"
 	"logger/internal/storage/memstorage"
 	"logger/internal/storage/pgstorage"
+	_ "net/http/pprof"
 	"os/signal"
 	"syscall"
 
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
@@ -179,6 +181,11 @@ func main() {
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
 	router.POST("/value/", handlers.GetMetricJSON(ctx, store, &conf))
 	router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
+
+	// Start PProf HTTP if option -t enabled
+	if conf.PProfHTTPEnabled {
+		pprof.Register(router)
+	}
 
 	err = router.Run(conf.RunAddr)
 	if err != nil {
