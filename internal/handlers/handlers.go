@@ -299,15 +299,15 @@ func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) g
 		jsn, err := io.ReadAll(c.Request.Body)
 		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
 		if err != nil {
-			http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+			http.Error(c.Writer, "GetMetricJSON: Error in json body read", http.StatusInternalServerError)
 			return
 		}
 
-		//var tmpMetric internal.Metrics
 		var tmpMetric storage.Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
+			log.Println("GetMetricJSON: Error json.Unmarshal. Error is:", err)
 			c.Status(http.StatusBadRequest)
 			return
 		}
@@ -315,38 +315,47 @@ func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) g
 		if tmpMetric.MType == "gauge" {
 			var val float64
 			val, err = store.GetGauge(ctx, tmpMetric.ID)
+			// Если получили ошибку -- в соответствии со спецификацией возвращаем json запроса
+			if err != nil {
+				log.Println("GetMetricJSON: Error store.GetGauge", tmpMetric, "Error is", err)
+				c.Header("content-type", "application/json")
+				c.IndentedJSON(http.StatusNotFound, jsn)
+				return
+			}
 			tmpMetric.Value = &val
 		}
 		if tmpMetric.MType == "counter" {
 			var delta int64
 			delta, err = store.GetCounter(ctx, tmpMetric.ID)
+			// Если получили ошибку -- в соответствии со спецификацией возвращаем json запроса
+			if err != nil {
+				log.Println("GetMetricJSON: Error store.GetCounter", tmpMetric, "Error is", err)
+				c.Header("content-type", "application/json")
+				c.IndentedJSON(http.StatusNotFound, jsn)
+				return
+			}
 			tmpMetric.Delta = &delta
-		}
-		if err != nil {
-			log.Println("Requested metric value with status 404", tmpMetric)
-			//log.Println("error is", err)
-			c.Status(http.StatusNotFound)
-			return
 		}
 
 		resp, err := json.Marshal(tmpMetric)
 		if err != nil {
+			log.Println("GetMetricJSON: Error in json.Marshal with Metric:", tmpMetric, "Error is", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 
 		if err := hashBody(resp, conf, c); err != nil {
-			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+			log.Println("GetMetricJSON: Error in hashBody:", err)
 		}
 
-		log.Println("Requested metric value with status 200", tmpMetric)
+		log.Println("GetMetricJSON: Requested metric value with status 200", tmpMetric)
 		j2 := io.NopCloser(bytes.NewBuffer(resp))
-		log.Println("Request value from j2:", j2)
+		log.Println("GetMetricJSON: Request value from j2:", j2)
 
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 		if _, err := c.Writer.Write(resp); err != nil {
-			log.Println("GetMetricJSON Writer.Write error:", err)
+			log.Println("GetMetricJSON: Error Writer.Write error:", err)
 		}
 	}
 }

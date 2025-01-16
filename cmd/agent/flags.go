@@ -41,8 +41,9 @@ func initConfig(conf *conf.AgentConfig) error {
 		// Для логирования агента в лог файл необходимо определить флаг -l
 		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
 		flag.StringVar(&key, "k", "", "key")
+		//flag.StringVar(&key, "k", "superkey", "key")
 		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
-		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
+		flag.BoolVar(&conf.PProfHTTPEnabled, "t", false, "Flag for enabling pprof web server. Default false.")
 
 		flag.Parse()
 	}
@@ -105,7 +106,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	conf.Key = key
 
 	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
-		log.Println("KEY env var specified, ", envRateLimit)
+		log.Println("RATE_LIMIT env var specified, ", envRateLimit)
 		RateLimitFlag = envRateLimit
 	}
 	if c, err := strconv.Atoi(RateLimitFlag); err == nil {

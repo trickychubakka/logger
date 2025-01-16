@@ -125,7 +125,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		}
 
 		rawBody := buf.Bytes()
-		//body = bytes.NewReader(buf.Bytes())
 		body = bytes.NewReader(rawBody)
 		// Считаем hash256 body ПОСЛЕ gzip-упаковки
 		hash, keyBool = hashBody(rawBody, config)
@@ -145,9 +144,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	if body != nil {
 		defer req.Body.Close()
 	}
-	//else {
-	//	log.Println("BODY is nil")
-	//}
 
 	req.Close = true
 
@@ -180,6 +176,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			return response, nil
 		}
 	}
+
 	if response != nil {
 		log.Println("SendRequest: response is:", response)
 		defer response.Body.Close()

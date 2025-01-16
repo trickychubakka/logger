@@ -38,7 +38,7 @@ func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Me
 			return nil
 		default:
 			if counter == config.PollInterval {
-				log.Println("metricsPolling goroutine polling")
+				//log.Println("metricsPolling goroutine polling")
 				m.Lock()
 				if err := internal.MetricsPolling(myMetrics); err != nil {
 					log.Println("error in metricsPolling :", err)
@@ -64,7 +64,7 @@ func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *interna
 			return nil
 		default:
 			if counter == config.PollInterval {
-				log.Println("gopsMetricsPolling goroutine polling")
+				//log.Println("gopsMetricsPolling goroutine polling")
 				m.Lock()
 				if err := internal.GopsMetricPolling(myMetrics); err != nil {
 					log.Println("error in metricsPolling :", err)
