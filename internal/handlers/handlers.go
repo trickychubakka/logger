@@ -134,6 +134,7 @@ func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 // MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
 func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		log.Println("MetricHandlerJSON START")
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
