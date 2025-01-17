@@ -3,23 +3,24 @@ package main
 
 import (
 	"context"
-	"logger/internal"
-	"logger/internal/storage/memstorage"
-	"logger/internal/storage/pgstorage"
-	_ "net/http/pprof"
-	"os/signal"
-	"syscall"
-
+	"fmt"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/internal"
 	"logger/internal/compress"
 	"logger/internal/handlers"
 	"logger/internal/logging"
+	"logger/internal/storage/memstorage"
+	"logger/internal/storage/pgstorage"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -34,7 +35,6 @@ func task(ctx context.Context, interval int, store handlers.Storager, conf *init
 		// проверяем не завершён ли ещё контекст и выходим, если завершён
 		case <-ctx.Done():
 			return
-
 		// выполняем нужный нам код
 		default:
 			println("Save metrics dump to file", conf.FileStoragePath, "with interval", interval, "s")
@@ -165,15 +165,20 @@ func main() {
 
 	// GIN init
 	router := gin.Default()
-
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
-
 	router.Use(compress.GzipRequestHandle(ctx, &conf))
-	//router.Use(compress.GzipResponseHandle(compress.DefaultCompression))
+	//router.Use(gin.Recovery())
 	if conf.DatabaseDSN == "" {
 		router.Use(internal.SyncDumpUpdate(ctx, store, &conf))
 	}
+	// для обработки всех запросов, не обрабатываемых handler-ами ниже -- из-за gzip handler проблемы
+	router.NoRoute(func(c *gin.Context) {
+		fmt.Println("Handling Any request for", c.Request.URL.Path)
+		c.Status(http.StatusNotFound)
+		// Flush -- убираем возможность изменения статуса gzip handler-ом:
+		c.Writer.Flush()
+	})
 	router.GET("/", handlers.GetAllMetrics(ctx, store))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(ctx, store))
 	router.POST("/update/", handlers.MetricHandlerJSON(ctx, store, &conf))
