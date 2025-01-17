@@ -210,7 +210,7 @@ func (pg PgStorage) GetGauge(ctx context.Context, key string) (float64, error) {
 }
 
 func (pg PgStorage) GetCounter(ctx context.Context, key string) (int64, error) {
-	log.Println("GetCounter PG for key ", key)
+	log.Println("GetCounter PG")
 	sqlQuery := "SELECT metric_value FROM counter WHERE metric_name = $1"
 	row := pgQueryRowWrapper(pg.pgDB.QueryRowContext, ctx, sqlQuery, key)
 	var metricValue int64

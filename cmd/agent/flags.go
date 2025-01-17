@@ -12,6 +12,13 @@ import (
 	"strings"
 )
 
+//type Config struct {
+//	pollInterval   int
+//	reportInterval int
+//	address        string
+//	logfile        string
+//}
+
 var config conf.AgentConfig
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -29,7 +36,6 @@ func initConfig(conf *conf.AgentConfig) error {
 		AddressFlag        string
 		LogFileFlag        string
 		key                string
-		RateLimitFlag      string
 	)
 
 	// Парсинг параметров командной строки
@@ -39,11 +45,9 @@ func initConfig(conf *conf.AgentConfig) error {
 		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определить флаг -l
-		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
+		flag.StringVar(&LogFileFlag, "l", "", "agent log file")
 		flag.StringVar(&key, "k", "", "key")
 		//flag.StringVar(&key, "k", "superkey", "key")
-		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
-		flag.BoolVar(&conf.PProfHTTPEnabled, "t", false, "Flag for enabling pprof web server. Default false.")
 
 		flag.Parse()
 	}
@@ -91,7 +95,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	}
 
 	// LogFile processing
-	// Для логирования агента в лог файл необходимо определить переменную окружения AGENT_LOG
+	// Для логирования агента в лог файл необходимо определеить переменную окружения AGENT_LOG
 	// Настройка переменных окружения имеют приоритет перед параметрами командной строки
 	if envLogFileFlag := os.Getenv("AGENT_LOG"); envLogFileFlag != "" {
 		log.Println("env var AGENT_LOG was specified, use AGENT_LOG =", envLogFileFlag)
@@ -100,21 +104,12 @@ func initConfig(conf *conf.AgentConfig) error {
 	conf.Logfile = LogFileFlag
 
 	if envKey := os.Getenv("KEY"); envKey != "" {
-		log.Println("KEY env var specified")
+		// TODO убрать envKey из вывода
+		log.Println("KEY env var specified, ", envKey)
 		key = envKey
 	}
 	conf.Key = key
 
-	if envRateLimit := os.Getenv("RATE_LIMIT"); envRateLimit != "" {
-		log.Println("RATE_LIMIT env var specified, ", envRateLimit)
-		RateLimitFlag = envRateLimit
-	}
-	if c, err := strconv.Atoi(RateLimitFlag); err == nil {
-		conf.RateLimit = c
-	} else {
-		return err
-	}
-
-	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s, RateLimit id %d \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile, conf.RateLimit)
+	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile)
 	return nil
 }
