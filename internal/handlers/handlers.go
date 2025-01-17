@@ -3,6 +3,9 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,6 +68,22 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	}
 	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> stor :", stor)
 	return stor, nil
+}
+
+// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context
+func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
+	if config.Key == "" {
+		log.Println("config.Key is empty")
+		return nil
+	}
+	h := hmac.New(sha256.New, []byte(config.Key))
+	h.Write(body)
+	hash := h.Sum(nil)
+	fmt.Printf("%x", hash)
+	log.Println("hash is:", hash)
+	log.Printf("HashSHA256 is : %x", hash)
+	c.Header("HashSHA256", hex.EncodeToString(hash))
+	return nil
 }
 
 // MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
@@ -166,6 +185,11 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+		}
+
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 
@@ -179,7 +203,7 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 }
 
 // MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
-func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFunc {
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -216,6 +240,11 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager) gin.HandlerFu
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("MetricHandlerBatchUpdate: Error in hashBody:", err)
+		}
+
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 
@@ -265,20 +294,20 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 }
 
 // GetMetricJSON получить значение метрики через JSON
-func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
+func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
 		if err != nil {
-			http.Error(c.Writer, "Error in json body read", http.StatusInternalServerError)
+			http.Error(c.Writer, "GetMetricJSON: Error in json body read", http.StatusInternalServerError)
 			return
 		}
 
-		//var tmpMetric internal.Metrics
 		var tmpMetric storage.Metrics
 
 		err = json.Unmarshal(jsn, &tmpMetric)
 		if err != nil {
+			log.Println("GetMetricJSON: Error json.Unmarshal. Error is:", err)
 			c.Status(http.StatusBadRequest)
 			return
 		}
@@ -286,33 +315,47 @@ func GetMetricJSON(ctx context.Context, store Storager) gin.HandlerFunc {
 		if tmpMetric.MType == "gauge" {
 			var val float64
 			val, err = store.GetGauge(ctx, tmpMetric.ID)
+			// Если получили ошибку -- в соответствии со спецификацией возвращаем json запроса
+			if err != nil {
+				log.Println("GetMetricJSON: Error store.GetGauge", tmpMetric, "Error is", err)
+				c.Header("content-type", "application/json")
+				c.IndentedJSON(http.StatusNotFound, jsn)
+				return
+			}
 			tmpMetric.Value = &val
 		}
 		if tmpMetric.MType == "counter" {
 			var delta int64
 			delta, err = store.GetCounter(ctx, tmpMetric.ID)
+			// Если получили ошибку -- в соответствии со спецификацией возвращаем json запроса
+			if err != nil {
+				log.Println("GetMetricJSON: Error store.GetCounter", tmpMetric, "Error is", err)
+				c.Header("content-type", "application/json")
+				c.IndentedJSON(http.StatusNotFound, jsn)
+				return
+			}
 			tmpMetric.Delta = &delta
-		}
-		if err != nil {
-			log.Println("Requested metric value with status 404", tmpMetric)
-			//log.Println("error is", err)
-			c.Status(http.StatusNotFound)
-			return
 		}
 
 		resp, err := json.Marshal(tmpMetric)
 		if err != nil {
+			log.Println("GetMetricJSON: Error in json.Marshal with Metric:", tmpMetric, "Error is", err)
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		log.Println("Requested metric value with status 200", tmpMetric)
+
+		if err := hashBody(resp, conf, c); err != nil {
+			log.Println("GetMetricJSON: Error in hashBody:", err)
+		}
+
+		log.Println("GetMetricJSON: Requested metric value with status 200", tmpMetric)
 		j2 := io.NopCloser(bytes.NewBuffer(resp))
-		log.Println("Request value from j2:", j2)
+		log.Println("GetMetricJSON: Request value from j2:", j2)
 
 		c.Header("content-type", "application/json")
 		c.Status(http.StatusOK)
 		if _, err := c.Writer.Write(resp); err != nil {
-			log.Println("GetMetricJSON Writer.Write error:", err)
+			log.Println("GetMetricJSON: Error Writer.Write error:", err)
 		}
 	}
 }

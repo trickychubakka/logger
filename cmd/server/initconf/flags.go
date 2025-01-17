@@ -21,6 +21,8 @@ type Config struct {
 	Restore             bool
 	DatabaseDSN         string
 	UseDBConfig         bool
+	Key                 string
+	PProfHTTPEnabled    bool
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом
@@ -63,11 +65,15 @@ func InitConfig(conf *Config) error {
 		log.Println("start parsing flags")
 		flag.StringVar(&conf.RunAddr, "a", "localhost:8080", "address and port to run server. Default localhost:8080.")
 		flag.StringVar(&conf.Logfile, "l", "", "server log file. Default empty.")
-		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 300 sec.")
+		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 10 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
-		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		//flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
+		//flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
+		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
 		flag.Parse()
 	}
 
@@ -148,6 +154,12 @@ func InitConfig(conf *Config) error {
 		} else {
 			conf.DatabaseDSN = connStr
 		}
+	}
+
+	if envKey := os.Getenv("KEY"); envKey != "" {
+		log.Println("env var DATABASE_DSN was specified, use DATABASE_DSN =", envKey)
+		conf.Key = envKey
+		log.Println("Using key")
 	}
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.RunAddr)
