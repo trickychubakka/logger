@@ -11,9 +11,11 @@ type Config struct {
 }
 
 type AgentConfig struct {
-	PollInterval   int
-	ReportInterval int
-	Address        string
-	Logfile        string
-	Key            string
+	PollInterval     int
+	ReportInterval   int
+	Address          string
+	Logfile          string
+	Key              string
+	RateLimit        int
+	PProfHTTPEnabled bool
 }

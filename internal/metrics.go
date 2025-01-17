@@ -8,6 +8,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/mem"
 	"io"
 	"log"
 	"logger/conf"
@@ -17,13 +19,6 @@ import (
 	"runtime"
 	"time"
 )
-
-//type Config struct {
-//	pollInterval   int
-//	reportInterval int
-//	address        string
-//	logfile        string
-//}
 
 type MetricsStorage struct {
 	gaugeMap   map[string]float64
@@ -65,6 +60,25 @@ func MetricsPolling(metrics *MetricsStorage) error {
 	}
 	metrics.counterMap["PollCount"] = 1
 	metrics.gaugeMap["RandomValue"] = rand.Float64()
+
+	return nil
+}
+
+func GopsMetricPolling(metrics *MetricsStorage) error {
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		log.Println("GopsMetricPolling error in mem.VirtualMemory()")
+		return err
+	}
+	metrics.gaugeMap["TotalMemory"] = float64(v.Total)
+	metrics.gaugeMap["FreeMemory"] = float64(v.Free)
+
+	c, err := cpu.Percent(0, false)
+	if err != nil {
+		log.Println("GopsMetricPolling error in cpu.Percent(0, false)")
+		return err
+	}
+	metrics.gaugeMap["CPUutilization1"] = c[0]
 
 	return nil
 }
@@ -111,7 +125,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		}
 
 		rawBody := buf.Bytes()
-		//body = bytes.NewReader(buf.Bytes())
 		body = bytes.NewReader(rawBody)
 		// Считаем hash256 body ПОСЛЕ gzip-упаковки
 		hash, keyBool = hashBody(rawBody, config)
@@ -127,7 +140,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	if err != nil {
 		log.Println("SendRequest. Error creating request:", err)
 		return nil, fmt.Errorf("%s %v", "SendRequest: http.NewRequest error.", err)
-		//panic(err)
 	}
 	if body != nil {
 		defer req.Body.Close()
@@ -148,21 +160,23 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	response, err := client.Do(req)
 
 	if err != nil {
+		log.Println("SendRequest error in 1 attempt. Error is:", err)
 		for i, t := range timeoutsRetryConst {
 			log.Println("SendRequest. Trying to recover after ", t, "seconds, attempt number ", i+1)
 			time.Sleep(time.Duration(t) * time.Second)
 			response, err = client.Do(req)
 			if err != nil {
-				log.Println("SendRequest: attempt ", i+1, " error")
+				log.Println("SendRequest: attempt ", i+1, " error is", err)
 				if i == 2 {
 					//panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
-					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error.", err)
+					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error", err)
 				}
 				continue
 			}
 			return response, nil
 		}
 	}
+
 	if response != nil {
 		log.Println("SendRequest: response is:", response)
 		defer response.Body.Close()
@@ -263,7 +277,6 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 	var metrics []Metrics
 	var tmpMetric Metrics
 	for k, v := range store.gaugeMap {
-		log.Println("MemstorageToMetrics. key is :", k, " value is :", v)
 		tmpMetric.ID = k
 		tmpMetric.MType = "gauge"
 		tmpMetric.Value = &v
@@ -275,7 +288,7 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 		tmpMetric.Delta = &v
 		metrics = append(metrics, tmpMetric)
 	}
-	log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
+	//log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
 	return metrics, nil
 }
 
@@ -289,7 +302,7 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.A
 	if err != nil {
 		log.Println("SendMetricsJSONBatch error in json.Marshal: ", err)
 	}
-	log.Println("payload in SendMetricsJSONBatch is:", string(payload))
+	//log.Println("payload in SendMetricsJSONBatch is:", string(payload))
 
 	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 	if err != nil {
