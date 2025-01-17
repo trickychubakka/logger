@@ -9,3 +9,13 @@ type Config struct {
 		Sslmode  string `mapstructure:"sslmode"`
 	}
 }
+
+type AgentConfig struct {
+	PollInterval     int
+	ReportInterval   int
+	Address          string
+	Logfile          string
+	Key              string
+	RateLimit        int
+	PProfHTTPEnabled bool
+}

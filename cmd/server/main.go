@@ -6,10 +6,12 @@ import (
 	"logger/internal"
 	"logger/internal/storage/memstorage"
 	"logger/internal/storage/pgstorage"
+	_ "net/http/pprof"
 	"os/signal"
 	"syscall"
 
 	"github.com/gin-contrib/gzip"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"log"
@@ -113,16 +115,19 @@ func main() {
 	}
 	defer store.Close()
 
-	// Сохранение дампа memstorage при остановке
+	// Остановка сервера и сохранение дампа memstorage при остановке, если используется memstorage
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := internal.Save(ctx, store, conf.FileStoragePath)
-		if err != nil {
-			return
+		// Если для хранения метрик не используется БД -- делаем DUMP метрик на диск
+		if conf.DatabaseDSN == "" {
+			err := internal.Save(ctx, store, conf.FileStoragePath)
+			if err != nil {
+				log.Println("Save metric DUMP error:", err)
+			}
 		}
-		log.Println("SERVER STOPPED!!!")
+		log.Println("SERVER STOPPED.")
 		os.Exit(1)
 	}()
 
@@ -164,18 +169,23 @@ func main() {
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress"
 
-	router.Use(compress.GzipRequestHandle)
+	router.Use(compress.GzipRequestHandle(ctx, &conf))
 	//router.Use(compress.GzipResponseHandle(compress.DefaultCompression))
 	if conf.DatabaseDSN == "" {
 		router.Use(internal.SyncDumpUpdate(ctx, store, &conf))
 	}
 	router.GET("/", handlers.GetAllMetrics(ctx, store))
 	router.POST("/update/:metricType/:metricName/:metricValue", handlers.MetricsHandler(ctx, store))
-	router.POST("/update", handlers.MetricHandlerJSON(ctx, store, &conf))
-	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store))
+	router.POST("/update/", handlers.MetricHandlerJSON(ctx, store, &conf))
+	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store, &conf))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
-	router.POST("/value", handlers.GetMetricJSON(ctx, store))
+	router.POST("/value/", handlers.GetMetricJSON(ctx, store, &conf))
 	router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
+
+	// Start PProf HTTP if option -t enabled
+	if conf.PProfHTTPEnabled {
+		pprof.Register(router)
+	}
 
 	err = router.Run(conf.RunAddr)
 	if err != nil {
@@ -189,5 +199,5 @@ func main() {
 		cancelDUMP()
 	}
 
-	log.Println("SERVER STOP!!!")
+	log.Println("SERVER STOPPED.")
 }
