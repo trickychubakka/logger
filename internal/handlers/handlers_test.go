@@ -263,7 +263,6 @@ func TestGetAllMetrics(t *testing.T) {
 				t.Fatal(err)
 			}
 			GetAllMetrics(ctx, &store)(c)
-			//GetAllMetrics(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
@@ -309,14 +308,12 @@ func Test_MetricsToMemstorage(t *testing.T) {
 		stor memstorage.MemStorage
 	}
 
-	//metrics := []storage.Metrics{
 	a := args{[]storage.Metrics{
 		{ID: "counter1", MType: "counter", Delta: &delta},
 		{ID: "gauge1", MType: "gauge", Value: &value},
 	},
 	}
 	var w want
-	//storWant, err := memstorage.New(context.Background())
 	w.stor, _ = memstorage.New(context.Background())
 	w.stor.UpdateCounter(context.Background(), "counter1", 1)
 	w.stor.UpdateGauge(context.Background(), "gauge1", 1.1)
@@ -326,45 +323,4 @@ func Test_MetricsToMemstorage(t *testing.T) {
 		t.Errorf("MetricsToMemstorage() error = %v", err)
 	}
 	assert.Equal(t, w.stor, stor)
-	//reflect.DeepEqual(storWant, stor)
 }
-
-//func Test_hashBody2(t *testing.T) {
-//	type args struct {
-//		body   []byte
-//		config *initconf.Config
-//		w      *httptest.ResponseRecorder
-//		r      *http.Request
-//	}
-//	tests := []struct {
-//		name    string
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "Positive test hash_body",
-//			args: args{
-//				body: []byte("Test body"),
-//				config: &initconf.Config{
-//					Key: "superkey",
-//				},
-//				w: httptest.NewRecorder(),
-//				r: httptest.NewRequest(http.MethodGet, "/", nil),
-//			},
-//			wantErr: false,
-//		},
-//	}
-//
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			c, err := SetTestGinContext(tt.args.w, tt.args.r)
-//			if err != nil {
-//				t.Fatal(err)
-//			}
-//			err = hashBody(tt.args.body, tt.args.config, c)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//}
