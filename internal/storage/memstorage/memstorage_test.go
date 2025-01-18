@@ -429,7 +429,7 @@ func TestMemStorage_UpdateBatch(t *testing.T) {
 		metrics []storage.Metrics
 		key     string
 	}
-	var g float64 = 100.1
+	var g = 100.1
 	var c int64 = 100
 	tests := []struct {
 		name    string
