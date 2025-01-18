@@ -57,6 +57,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	if IsValidIP(strings.Split(AddressFlag, ":")[0]) {
 		log.Println("AddressFlag is IP address, Using IP:", AddressFlag)
 	} else if _, err := url.ParseRequestURI(AddressFlag); err != nil {
+		log.Println("initConfig: Error parsing AddressFlag: ", AddressFlag)
 		return err
 	}
 	conf.Address = AddressFlag
@@ -70,6 +71,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	if c, err := strconv.Atoi(ReportIntervalFlag); err == nil {
 		conf.ReportInterval = c
 	} else {
+		log.Println("initConfig: Error parsing ReportIntervalFlag: ", ReportIntervalFlag)
 		return err
 	}
 
@@ -82,6 +84,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	if c, err := strconv.Atoi(PollIntervalFlag); err == nil {
 		conf.PollInterval = c
 	} else {
+		log.Println("initConfig: Error parsing PollIntervalFlag: ", PollIntervalFlag)
 		return err
 	}
 
@@ -112,6 +115,7 @@ func initConfig(conf *conf.AgentConfig) error {
 	if c, err := strconv.Atoi(RateLimitFlag); err == nil {
 		conf.RateLimit = c
 	} else {
+		log.Println("initConfig: Error parsing RateLimitFlag: ", RateLimitFlag)
 		return err
 	}
 

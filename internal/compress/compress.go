@@ -44,29 +44,29 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 	return g.writer.Write([]byte(s))
 }
 
-func GzipResponseHandle(level int) gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		if !shouldCompress(c.Request) {
-			c.Next()
-			return
-		}
-		// создаём compress.Writer поверх текущего c.Writer
-		gz, err := gzip.NewWriterLevel(c.Writer, level)
-		if err != nil {
-			io.WriteString(c.Writer, err.Error())
-			return
-		}
-		c.Header("Content-Encoding", "compress")
-		c.Header("Vary", "Accept-Encoding")
-		c.Writer = &gzipWriter{c.Writer, gz}
-		defer func() {
-			c.Header("Content-Length", "0")
-			gz.Close()
-		}()
-		c.Next()
-	}
-}
+//func GzipResponseHandle(level int) gin.HandlerFunc {
+//	return func(c *gin.Context) {
+//
+//		if !shouldCompress(c.Request) {
+//			c.Next()
+//			return
+//		}
+//		// создаём compress.Writer поверх текущего c.Writer
+//		gz, err := gzip.NewWriterLevel(c.Writer, level)
+//		if err != nil {
+//			io.WriteString(c.Writer, err.Error())
+//			return
+//		}
+//		c.Header("Content-Encoding", "compress")
+//		c.Header("Vary", "Accept-Encoding")
+//		c.Writer = &gzipWriter{c.Writer, gz}
+//		defer func() {
+//			c.Header("Content-Length", "0")
+//			gz.Close()
+//		}()
+//		c.Next()
+//	}
+//}
 
 func shouldCompress(req *http.Request) bool {
 	if !strings.Contains(req.Header.Get("Accept-Encoding"), "compress") {

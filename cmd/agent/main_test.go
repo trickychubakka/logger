@@ -17,6 +17,9 @@ func setEnv(envAddr, envPollInterval, envReportInterval string) error {
 	if err := os.Setenv("REPORT_INTERVAL", envReportInterval); err != nil {
 		return err
 	}
+	if err := os.Setenv("RATE_LIMIT", envReportInterval); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -27,6 +30,7 @@ func Test_initConfig(t *testing.T) {
 		envAddr           string
 		envPollInterval   string
 		envReportInterval string
+		envRateLimit      string
 	}
 
 	tests := []struct {
@@ -41,6 +45,7 @@ func Test_initConfig(t *testing.T) {
 				envAddr:           "localhost:8080",
 				envPollInterval:   "2",
 				envReportInterval: "10",
+				envRateLimit:      "5",
 			},
 			wantErr: false,
 		},
