@@ -34,14 +34,15 @@ func IsValidIP(ip string) bool {
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
 var FlagTest = false
 
-func readDBConfig() (string, error) {
+// readDBConfig -- функция чтения конфигурации dbconfig.yaml по указанному пути
+func readDBConfig(configName string, configPath string) (string, error) {
 	dbCfg := &conf.Config{}
 	var connStr string
 	log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
-	viper.SetConfigName("dbconfig")
+	viper.SetConfigName(configName)
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
-	viper.AddConfigPath("./conf")
+	viper.AddConfigPath(configPath)
 	viper.AutomaticEnv()
 	err := viper.ReadInConfig()
 	if err != nil {
@@ -149,7 +150,7 @@ func InitConfig(conf *Config) error {
 	// Если DatabaseDSN нет в переменных окружения и в параметрах запуска -- пытаемся прочитать из dbconfig.yaml
 	if conf.DatabaseDSN == "" && conf.UseDBConfig {
 		log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
-		if connStr, err := readDBConfig(); err != nil {
+		if connStr, err := readDBConfig("dbconfig", "./conf"); err != nil {
 			log.Println("Error reading dbconfig.yaml:", err)
 		} else {
 			conf.DatabaseDSN = connStr

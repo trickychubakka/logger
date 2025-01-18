@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"logger/cmd/server/initconf"
+	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
 	"net/http"
 	"net/http/httptest"
@@ -271,3 +273,98 @@ func TestGetAllMetrics(t *testing.T) {
 		})
 	}
 }
+
+func Test_hashBody(t *testing.T) {
+	body := []byte("Test body")
+	var c *gin.Context
+	config := initconf.Config{
+		Key: "superkey",
+	}
+	type args struct {
+		w *httptest.ResponseRecorder
+		r *http.Request
+	}
+	httpArg := args{
+		w: httptest.NewRecorder(),
+		r: httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil),
+	}
+	c, err := SetTestGinContext(httpArg.w, httpArg.r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := hashBody(body, &config, c); err != nil {
+		t.Errorf("hashBody() error = %v", err)
+	}
+}
+
+func Test_MetricsToMemstorage(t *testing.T) {
+	var delta int64 = 1
+	var value = 1.1
+
+	type args struct {
+		metrics []storage.Metrics
+	}
+
+	type want struct {
+		stor memstorage.MemStorage
+	}
+
+	//metrics := []storage.Metrics{
+	a := args{[]storage.Metrics{
+		{ID: "counter1", MType: "counter", Delta: &delta},
+		{ID: "gauge1", MType: "gauge", Value: &value},
+	},
+	}
+	var w want
+	//storWant, err := memstorage.New(context.Background())
+	w.stor, _ = memstorage.New(context.Background())
+	w.stor.UpdateCounter(context.Background(), "counter1", 1)
+	w.stor.UpdateGauge(context.Background(), "gauge1", 1.1)
+
+	stor, err := MetricsToMemstorage(context.Background(), a.metrics)
+	if err != nil {
+		t.Errorf("MetricsToMemstorage() error = %v", err)
+	}
+	assert.Equal(t, w.stor, stor)
+	//reflect.DeepEqual(storWant, stor)
+}
+
+//func Test_hashBody2(t *testing.T) {
+//	type args struct {
+//		body   []byte
+//		config *initconf.Config
+//		w      *httptest.ResponseRecorder
+//		r      *http.Request
+//	}
+//	tests := []struct {
+//		name    string
+//		args    args
+//		wantErr bool
+//	}{
+//		{
+//			name: "Positive test hash_body",
+//			args: args{
+//				body: []byte("Test body"),
+//				config: &initconf.Config{
+//					Key: "superkey",
+//				},
+//				w: httptest.NewRecorder(),
+//				r: httptest.NewRequest(http.MethodGet, "/", nil),
+//			},
+//			wantErr: false,
+//		},
+//	}
+//
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			c, err := SetTestGinContext(tt.args.w, tt.args.r)
+//			if err != nil {
+//				t.Fatal(err)
+//			}
+//			err = hashBody(tt.args.body, tt.args.config, c)
+//			if (err != nil) != tt.wantErr {
+//				t.Errorf("SendRequest() error = %v, wantErr %v", err, tt.wantErr)
+//			}
+//		})
+//	}
+//}
