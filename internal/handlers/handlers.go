@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/internal/database"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
 	"net/http"
@@ -360,24 +361,24 @@ func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) g
 	}
 }
 
-//func DBPing(connStr string) gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//		// Тест коннекта к базе
-//		log.Println("TEST Connecting to base")
-//		db := database.Postgresql{}
-//		err := db.Connect(connStr)
-//		if err != nil {
-//			log.Println("Error connecting to database :", err)
-//		}
-//		defer db.Close()
-//		err = db.Ping()
-//		if err != nil {
-//			log.Println("database connect error")
-//			c.Status(http.StatusInternalServerError)
-//			panic(err)
-//		}
-//		log.Println("database connected")
-//		c.Status(http.StatusOK)
-//		c.Next()
-//	}
-//}
+func DBPing(connStr string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Тест коннекта к базе
+		log.Println("TEST Connecting to base")
+		db := database.Postgresql{}
+		err := db.Connect(connStr)
+		if err != nil {
+			log.Println("Error connecting to database :", err)
+		}
+		defer db.Close()
+		err = db.Ping()
+		if err != nil {
+			log.Println("database connect error")
+			c.Status(http.StatusInternalServerError)
+			panic(err)
+		}
+		log.Println("database connected")
+		c.Status(http.StatusOK)
+		c.Next()
+	}
+}

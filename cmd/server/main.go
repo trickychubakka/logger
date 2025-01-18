@@ -185,7 +185,7 @@ func main() {
 	router.POST("/updates", handlers.MetricHandlerBatchUpdate(ctx, store, &conf))
 	router.GET("/value/:metricType/:metricName", handlers.GetMetric(ctx, store))
 	router.POST("/value/", handlers.GetMetricJSON(ctx, store, &conf))
-	//router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
+	router.GET("/ping", handlers.DBPing(conf.DatabaseDSN))
 
 	// Start PProf HTTP if option -t enabled
 	if conf.PProfHTTPEnabled {
