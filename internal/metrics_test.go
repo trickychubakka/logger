@@ -158,3 +158,34 @@ func TestSendRequest(t *testing.T) {
 		})
 	}
 }
+
+func Test_hashBody(t *testing.T) {
+	body := []byte("Test body")
+	config := conf.AgentConfig{
+		Key: "superkey",
+	}
+	if _, ok := hashBody(body, &config); !ok {
+		t.Errorf("hashBody() error = %v", ok)
+	}
+}
+
+func createMetricsStore() MetricsStorage {
+	return MetricsStorage{
+		gaugeMap:   map[string]float64{"Gauge1": 1.1, "Gauge2": 2.2},
+		counterMap: map[string]int64{"Counter1": 1, "Counter2": 2},
+	}
+}
+
+func TestMemstorageToMetrics(t *testing.T) {
+	type args struct {
+		store MetricsStorage
+	}
+	a := args{
+		store: createMetricsStore(),
+	}
+	_, err := MemstorageToMetrics(a.store)
+	if err != nil {
+		t.Errorf("MemstorageToMetrics() error = %v", err)
+	}
+	//assert.Equal(t, w.metrics, m)
+}
