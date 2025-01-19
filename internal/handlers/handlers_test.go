@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"logger/cmd/server/initconf"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
@@ -16,12 +19,36 @@ import (
 //var store, err = memstorage.New(ctx)
 
 // SetTestGinContext вспомогательная функция создания Gin контекста
-func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) (*gin.Context, error) {
+func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) *gin.Context {
 	gin.SetMode(gin.TestMode)
 	c, _ := gin.CreateTestContext(w)
 	c.Request = r
 	c.Request.Header.Set("Content-Type", "text/plain")
-	return c, nil
+	return c
+}
+
+func createTestStor(ctx context.Context) memstorage.MemStorage {
+	store, err := memstorage.New(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	store.UpdateCounter(ctx, "Counter1", 1)
+	store.UpdateCounter(ctx, "Counter2", 2)
+	store.UpdateCounter(ctx, "Counter3", 3)
+	store.UpdateGauge(ctx, "Gauge1", 1.1)
+	store.UpdateGauge(ctx, "Gauge2", 2.2)
+	store.UpdateGauge(ctx, "Gauge3", 3.3)
+	return store
+}
+
+func createMetricsArray() []storage.Metrics {
+	var c int64 = 100
+	var g = 100.1
+	tmpMetrics := []storage.Metrics{
+		{ID: "counter100", MType: "counter", Delta: &c},
+		{ID: "gauge1", MType: "gauge", Value: &g},
+	}
+	return tmpMetrics
 }
 
 func TestMetricHandler(t *testing.T) {
@@ -97,10 +124,7 @@ func TestMetricHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := SetTestGinContext(tt.args.w, tt.args.r)
-			if err != nil {
-				t.Fatal(err)
-			}
+			c := SetTestGinContext(tt.args.w, tt.args.r)
 			//MetricsHandler(c)
 			MetricsHandler(ctx, &store)(c)
 			res := c.Writer
@@ -204,10 +228,7 @@ func TestGetMetric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := SetTestGinContext(tt.args.w, tt.args.r)
-			if err != nil {
-				t.Fatal(err)
-			}
+			c := SetTestGinContext(tt.args.w, tt.args.r)
 			GetMetric(ctx, &store)(c)
 			//GetMetric(c)
 			res := c.Writer
@@ -252,16 +273,14 @@ func TestGetAllMetrics(t *testing.T) {
 				r: httptest.NewRequest(http.MethodGet, "/", nil),
 			},
 			want: want{
-				code: http.StatusOK,
+				code:        http.StatusOK,
+				contentType: "application/json",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := SetTestGinContext(tt.args.w, tt.args.r)
-			if err != nil {
-				t.Fatal(err)
-			}
+			c := SetTestGinContext(tt.args.w, tt.args.r)
 			GetAllMetrics(ctx, &store)(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
@@ -287,10 +306,7 @@ func Test_hashBody(t *testing.T) {
 		w: httptest.NewRecorder(),
 		r: httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil),
 	}
-	c, err := SetTestGinContext(httpArg.w, httpArg.r)
-	if err != nil {
-		t.Fatal(err)
-	}
+	c = SetTestGinContext(httpArg.w, httpArg.r)
 	if err := hashBody(body, &config, c); err != nil {
 		t.Errorf("hashBody() error = %v", err)
 	}
@@ -323,4 +339,255 @@ func Test_MetricsToMemstorage(t *testing.T) {
 		t.Errorf("MetricsToMemstorage() error = %v", err)
 	}
 	assert.Equal(t, w.stor, stor)
+}
+
+func TestMetricHandlerBatchUpdate(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		store Storager
+		conf  *initconf.Config
+		w     *httptest.ResponseRecorder
+		r     *http.Request
+	}
+	type want struct {
+		code        int
+		contentType string
+	}
+	tmpMetrics := createMetricsArray()
+	body, _ := json.Marshal(tmpMetrics)
+	tests := []struct {
+		name       string
+		args       args
+		want       want
+		updateJSON string
+	}{
+		{
+			name: "Positive test MetricHandlerBatchUpdate",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(body)),
+			},
+			want: want{
+				code:        http.StatusOK,
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "StatusBadRequest test MetricHandlerBatchUpdate ",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader([]byte("wrong"))),
+			},
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := SetTestGinContext(tt.args.w, tt.args.r)
+			MetricHandlerBatchUpdate(tt.args.ctx, tt.args.store, tt.args.conf)(c)
+			res := c.Writer
+			assert.Equal(t, tt.want.code, res.Status())
+			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+		})
+	}
+}
+
+func TestMetricHandlerJSON(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		store Storager
+		conf  *initconf.Config
+		w     *httptest.ResponseRecorder
+		r     *http.Request
+	}
+	type want struct {
+		code        int
+		contentType string
+	}
+	body := []byte(`{"id": "Counter100", "type": "counter", "delta": 100}`)
+	bodyStatusBadRequest := []byte(`{"id": "Counter100", "type": "wrongType", "delta": 100}`)
+	tests := []struct {
+		name       string
+		args       args
+		want       want
+		updateJSON string
+	}{
+		{
+			name: "Positive test MetricHandlerJSON",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(body)),
+			},
+			want: want{
+				code:        http.StatusOK,
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "StatusBadRequest test MetricHandlerJSON ",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(bodyStatusBadRequest)),
+			},
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := SetTestGinContext(tt.args.w, tt.args.r)
+			MetricHandlerJSON(tt.args.ctx, tt.args.store, tt.args.conf)(c)
+			res := c.Writer
+			assert.Equal(t, tt.want.code, res.Status())
+			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+		})
+	}
+}
+
+func TestDBPing(t *testing.T) {
+	type args struct {
+		connStr string
+	}
+	tests := []struct {
+		name string
+		args args
+		want gin.HandlerFunc
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, DBPing(tt.args.connStr), "DBPing(%v)", tt.args.connStr)
+		})
+	}
+}
+
+func TestGetMetricJSON(t *testing.T) {
+	type args struct {
+		ctx   context.Context
+		store Storager
+		conf  *initconf.Config
+		w     *httptest.ResponseRecorder
+		r     *http.Request
+	}
+	type want struct {
+		code        int
+		contentType string
+	}
+	body := []byte(`{"id": "Counter2", "type": "counter"}`)
+	bodyStatusNotFoundCounter := []byte(`{"id": "Counter200", "type": "counter"}`)
+	bodyStatusNotFoundGauge := []byte(`{"id": "Gauge200", "type": "gauge"}`)
+	tests := []struct {
+		name       string
+		args       args
+		want       want
+		updateJSON string
+	}{
+		{
+			name: "Positive test GetMetricJSON",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(body)),
+			},
+			want: want{
+				code:        http.StatusOK,
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "StatusNotFound counter test GetMetricJSON",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(bodyStatusNotFoundCounter)),
+			},
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "StatusNotFound gauge test GetMetricJSON",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(bodyStatusNotFoundGauge)),
+			},
+			want: want{
+				code:        http.StatusNotFound,
+				contentType: "application/json",
+			},
+		},
+		{
+			name: "StatusBadRequest test GetMetricJSON ",
+			args: args{
+				ctx:   context.Background(),
+				store: createTestStor(context.Background()),
+				conf: &initconf.Config{
+					FileStoragePath: "",
+					Key:             "superkey",
+				},
+				w: httptest.NewRecorder(),
+				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader([]byte("wrong"))),
+			},
+			want: want{
+				code:        http.StatusBadRequest,
+				contentType: "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := SetTestGinContext(tt.args.w, tt.args.r)
+			GetMetricJSON(tt.args.ctx, tt.args.store, tt.args.conf)(c)
+			res := c.Writer
+			assert.Equal(t, tt.want.code, res.Status())
+			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+		})
+	}
 }
