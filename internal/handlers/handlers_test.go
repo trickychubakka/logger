@@ -303,8 +303,9 @@ func ExampleGetMetric() {
 	GetMetric(ctx, &store)(c)
 	res := c.Writer
 	// Read and print response.
-	jsn, err := io.ReadAll(w.Result().Body)
 	w.Result().Body.Close()
+	jsn, err := io.ReadAll(w.Result().Body)
+
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
@@ -385,9 +386,10 @@ func ExampleGetAllMetrics() {
 	c := SetTestGinContext(w, r)
 	GetAllMetrics(ctx, store)(c)
 	res := c.Writer
+	defer w.Result().Body.Close()
 	// Read and print response.
 	jsn, err := io.ReadAll(w.Result().Body)
-	w.Result().Body.Close()
+
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
