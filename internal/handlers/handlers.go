@@ -81,7 +81,6 @@ func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
 	h := hmac.New(sha256.New, []byte(config.Key))
 	h.Write(body)
 	hash := h.Sum(nil)
-	log.Println("hash is:", hash)
 	c.Header("HashSHA256", hex.EncodeToString(hash))
 	return nil
 }
