@@ -19,7 +19,7 @@ func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) *gin.Conte
 	return c
 }
 
-func TestWith11Logging(t *testing.T) {
+func TestWithLogging(t *testing.T) {
 	type args struct {
 		w     *httptest.ResponseRecorder
 		r     *http.Request
@@ -41,7 +41,7 @@ func TestWith11Logging(t *testing.T) {
 		want want
 	}{
 		{
-			name: "Positive test func TestGzipRequestHandle(t *testing.T)",
+			name: "Positive test TestWithLogging(t *testing.T)",
 			args: args{
 				w: httptest.NewRecorder(),
 				r: httptest.NewRequest(http.MethodPost, "/update/", nil),
@@ -56,7 +56,7 @@ func TestWith11Logging(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := SetTestGinContext(tt.args.w, tt.args.r)
 			WithLogging(&sugar)(c)
-			if !assert.Equal(t, reflect.TypeOf(*c), reflect.TypeOf(gin.Context{})) {
+			if !assert.Equal(t, reflect.TypeOf(c), reflect.TypeOf(&gin.Context{})) {
 				t.Errorf("With11Logging() got = %v, want %v", reflect.TypeOf(c), reflect.TypeOf(gin.Context{}))
 			}
 		})

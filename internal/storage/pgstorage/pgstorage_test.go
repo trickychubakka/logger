@@ -116,11 +116,11 @@ func TestNew(t *testing.T) {
 			log.Println("Using DATABASE_DSN from env var")
 			tt.args.conf.DatabaseDSN = dsn
 			pg, err := New(context.Background(), tt.args.conf)
-			defer pg.Close()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			defer pg.Close()
 			//if !reflect.DeepEqual(got, tt.want) {
 			//	t.Errorf("New() got = %v, want %v", got, tt.want)
 			//}

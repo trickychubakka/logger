@@ -304,6 +304,7 @@ func ExampleGetMetric() {
 	res := c.Writer
 	// Read and print response.
 	jsn, err := io.ReadAll(w.Result().Body)
+	defer w.Result().Body.Close()
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
@@ -389,6 +390,7 @@ func ExampleGetAllMetrics() {
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
+	defer w.Result().Body.Close()
 	var memStore memstorage.MemStorage
 	err = memstorage.Unmarshal(jsn, &memStore)
 
@@ -759,6 +761,7 @@ func ExampleGetMetricJSON() {
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
+	defer w.Result().Body.Close()
 	fmt.Println(string(jsn))
 
 	// Output:

@@ -274,22 +274,22 @@ func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 		}
 		// metrics может быть типа memstorage.MemStorage. В этом случае из-за приватности map этого типа
 		// он не будет правильно кодироваться в JSON. Необходимо кастовать в тип memStor.
-		switch metrics.(type) {
+		switch v := metrics.(type) {
 		case memstorage.MemStorage:
-			log.Println("GetAllMetrics: MemStorage")
+			log.Println("GetAllMetrics: store type", v)
 			m, ok := metrics.(memstorage.MemStorage)
 			if !ok {
 				log.Println("GetAllMetrics error cast metric")
 				c.Status(http.StatusInternalServerError)
 				return
 			}
-			t.GaugeMap, err = m.GetAllGaugesMap(ctx)
-			t.CounterMap, err = m.GetAllCountersMap(ctx)
+			t.GaugeMap, _ = m.GetAllGaugesMap(ctx)
+			t.CounterMap, _ = m.GetAllCountersMap(ctx)
 			c.Header("content-type", "text/html; charset=utf-8")
 			c.IndentedJSON(http.StatusOK, t)
 		default:
+			log.Println("GetAllMetrics: store type", v)
 			c.Header("content-type", "text/html; charset=utf-8")
-			log.Println("GetAllMetrics: Unknown type")
 			c.IndentedJSON(http.StatusOK, metrics)
 		}
 	}
