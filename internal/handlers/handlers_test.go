@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"log"
 	"logger/cmd/server/initconf"
 	"logger/internal/storage"
@@ -15,8 +17,6 @@ import (
 	"reflect"
 	"testing"
 )
-
-//var store, err = memstorage.New(ctx)
 
 // SetTestGinContext вспомогательная функция создания Gin контекста
 func SetTestGinContext(w *httptest.ResponseRecorder, r *http.Request) *gin.Context {
@@ -38,6 +38,7 @@ func createTestStor(ctx context.Context) memstorage.MemStorage {
 	store.UpdateGauge(ctx, "Gauge1", 1.1)
 	store.UpdateGauge(ctx, "Gauge2", 2.2)
 	store.UpdateGauge(ctx, "Gauge3", 3.3)
+	log.Println(store)
 	return store
 }
 
@@ -51,7 +52,7 @@ func createMetricsArray() []storage.Metrics {
 	return tmpMetrics
 }
 
-func TestMetricHandler(t *testing.T) {
+func TestMetricsHandler(t *testing.T) {
 	type args struct {
 		w *httptest.ResponseRecorder
 		r *http.Request
@@ -125,17 +126,59 @@ func TestMetricHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			c := SetTestGinContext(tt.args.w, tt.args.r)
-			//MetricsHandler(c)
 			MetricsHandler(ctx, &store)(c)
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
-			//defer res.Body.Close()
 			defer tt.args.w.Result().Body.Close()
 			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
-			//require.NoError(t, err)
 		})
 	}
+}
+
+func ExampleMetricsHandler() {
+
+	ctx := context.Background()
+	var store, _ = memstorage.New(ctx)
+
+	// Создадим в Store метрику metric1 со значением 7.77
+	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
+		log.Println("ExampleGetMetric UpdateGauge error", err)
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/update/gauge/metric1/1", nil)
+
+	c := SetTestGinContext(w, r)
+	GetMetric(ctx, &store)(c)
+	res := c.Writer
+	fmt.Println(res.Status())
+
+	// Output:
+	// 200
+}
+
+func ExampleMetricsHandler_wrongMetricType() {
+
+	ctx := context.Background()
+	var store, _ = memstorage.New(ctx)
+
+	// Создадим в Store метрику metric1 со значением 7.77
+	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
+		log.Println("ExampleGetMetric UpdateGauge error", err)
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/update/bool/metric1/1", nil)
+
+	c := SetTestGinContext(w, r)
+	GetMetric(ctx, &store)(c)
+	res := c.Writer
+	fmt.Println(res.Status())
+
+	// Output:
+	// Error in GetMetric: wrong metric type
+	// 404
 }
 
 func Test_urlToMap(t *testing.T) {
@@ -243,6 +286,35 @@ func TestGetMetric(t *testing.T) {
 	}
 }
 
+func ExampleGetMetric() {
+
+	ctx := context.Background()
+	var store, _ = memstorage.New(ctx)
+
+	// Создадим в Store метрику metric1 со значением 7.77
+	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
+		log.Println("ExampleGetMetric UpdateGauge error", err)
+	}
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
+
+	c := SetTestGinContext(w, r)
+	GetMetric(ctx, &store)(c)
+	res := c.Writer
+	// Read and print response.
+	jsn, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
+	fmt.Println(res.Status())
+	fmt.Println(string(jsn))
+
+	// Output:
+	// 200
+	// 7.77
+}
+
 func TestGetAllMetrics(t *testing.T) {
 	type args struct {
 		w *httptest.ResponseRecorder
@@ -290,6 +362,42 @@ func TestGetAllMetrics(t *testing.T) {
 			//require.NoError(t, err)
 		})
 	}
+}
+
+type tmpMemStorage struct {
+	gaugeMap   map[string]float64
+	counterMap map[string]int64
+}
+
+func ExampleGetAllMetrics() {
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	s, _ := store.GetAllMetrics(ctx)
+	log.Println("1", s)
+
+	//var store, _ = memstorage.New(ctx)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	c := SetTestGinContext(w, r)
+	GetAllMetrics(ctx, store)(c)
+	res := c.Writer
+	// Read and print response.
+	jsn, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
+	var memStore memstorage.MemStorage
+	err = memstorage.Unmarshal(jsn, &memStore)
+
+	fmt.Println(res.Status())
+	fmt.Println(memStore)
+
+	// Output:
+	// 200
+	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
 }
 
 func Test_hashBody(t *testing.T) {
@@ -407,6 +515,35 @@ func TestMetricHandlerBatchUpdate(t *testing.T) {
 	}
 }
 
+func ExampleMetricHandlerBatchUpdate() {
+
+	// Try to update logger server with next batched metrics:
+	//	{ID: "counter100", MType: "counter", Delta: 100},
+	//	{ID: "gauge1", MType: "gauge", Value: 100.1},
+	metrics := createMetricsArray()
+	body, _ := json.Marshal(metrics)
+	ctx := context.Background()
+
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	conf := &initconf.Config{
+		Key: "superkey",
+	}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(body))
+	c := SetTestGinContext(w, r)
+
+	MetricHandlerBatchUpdate(ctx, store, conf)(c)
+	// read result from Gin context:
+	res := c.Writer
+	fmt.Println(res.Status())
+	fmt.Println(res.Header().Get("Content-Type"))
+
+	// Output:
+	// 200
+	// application/json
+}
+
 func TestMetricHandlerJSON(t *testing.T) {
 	type args struct {
 		ctx   context.Context
@@ -473,22 +610,28 @@ func TestMetricHandlerJSON(t *testing.T) {
 	}
 }
 
-func TestDBPing(t *testing.T) {
-	type args struct {
-		connStr string
+func ExampleMetricHandlerJSON() {
+	// Try to update logger server with next metric: {"id": "Counter100", "type": "counter", "delta": 100}
+	metric := `{"id": "Counter100", "type": "counter", "delta": 100}`
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	conf := &initconf.Config{
+		Key: "superkey",
 	}
-	tests := []struct {
-		name string
-		args args
-		want gin.HandlerFunc
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, DBPing(tt.args.connStr), "DBPing(%v)", tt.args.connStr)
-		})
-	}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader([]byte(metric)))
+	c := SetTestGinContext(w, r)
+
+	MetricHandlerJSON(ctx, store, conf)(c)
+	// read result from Gin context:
+	res := c.Writer
+	fmt.Println(res.Status())
+	fmt.Println(res.Header().Get("Content-Type"))
+
+	// Output:
+	// 200
+	// application/json
 }
 
 func TestGetMetricJSON(t *testing.T) {
@@ -522,7 +665,7 @@ func TestGetMetricJSON(t *testing.T) {
 					Key:             "superkey",
 				},
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(body)),
+				r: httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader(body)),
 			},
 			want: want{
 				code:        http.StatusOK,
@@ -539,7 +682,7 @@ func TestGetMetricJSON(t *testing.T) {
 					Key:             "superkey",
 				},
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(bodyStatusNotFoundCounter)),
+				r: httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader(bodyStatusNotFoundCounter)),
 			},
 			want: want{
 				code:        http.StatusNotFound,
@@ -556,7 +699,7 @@ func TestGetMetricJSON(t *testing.T) {
 					Key:             "superkey",
 				},
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader(bodyStatusNotFoundGauge)),
+				r: httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader(bodyStatusNotFoundGauge)),
 			},
 			want: want{
 				code:        http.StatusNotFound,
@@ -573,7 +716,7 @@ func TestGetMetricJSON(t *testing.T) {
 					Key:             "superkey",
 				},
 				w: httptest.NewRecorder(),
-				r: httptest.NewRequest(http.MethodPost, "/update/", bytes.NewReader([]byte("wrong"))),
+				r: httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader([]byte("wrong"))),
 			},
 			want: want{
 				code:        http.StatusBadRequest,
@@ -590,4 +733,60 @@ func TestGetMetricJSON(t *testing.T) {
 			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
 		})
 	}
+}
+
+func ExampleGetMetricJSON() {
+	// Try to request from logger server next metric: {"id": "Counter2", "type": "counter"}
+	requestedMetric := `{"id": "Counter2", "type": "counter"}`
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	conf := &initconf.Config{
+		Key: "superkey",
+	}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader([]byte(requestedMetric)))
+	c := SetTestGinContext(w, r)
+
+	GetMetricJSON(ctx, store, conf)(c)
+	// read result from Gin context:
+	res := c.Writer
+	fmt.Println(res.Status())
+	fmt.Println(res.Header().Get("Content-Type"))
+
+	// Read and print response.
+	jsn, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
+	fmt.Println(string(jsn))
+
+	// Output:
+	// 200
+	// application/json
+	// {"id":"Counter2","type":"counter","delta":2}
+}
+
+func ExampleGetMetricJSON_second() {
+	// Try to request from logger server next metric: {"id": "Counter200", "type": "counter"}
+	requestedMetric := `{"id": "Counter200", "type": "counter"}`
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	conf := &initconf.Config{
+		Key: "superkey",
+	}
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader([]byte(requestedMetric)))
+	c := SetTestGinContext(w, r)
+
+	GetMetricJSON(ctx, store, conf)(c)
+	// read result from Gin context:
+	res := c.Writer
+	fmt.Println(res.Status())
+	fmt.Println(res.Header().Get("Content-Type"))
+
+	// Output:
+	// 404
+	// application/json
 }

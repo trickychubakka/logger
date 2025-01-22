@@ -1,3 +1,4 @@
+// Package handlers -- пакет с реализацией gin-handler-ов logger сервера.
 package handlers
 
 import (
@@ -29,6 +30,7 @@ const (
 	metricValue = 3
 )
 
+// Storager интерфейс с используемыми методами.
 type Storager interface {
 	UpdateGauge(ctx context.Context, key string, value float64) error
 	UpdateCounter(ctx context.Context, key string, value int64) error
@@ -40,7 +42,7 @@ type Storager interface {
 	Close() error
 }
 
-// urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
+// urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/".
 func urlToMap(url string) ([]string, error) {
 	splittedURL := strings.Split(strings.Trim(url, "/"), "/")
 	// Если длина разобранного URL не больше 2-х -- недостаток указания метрики/значения, возвращаем StatusNotFound
@@ -55,7 +57,7 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
-// MetricsToMemstorage функция конвертации Metrics в Memstorage
+// MetricsToMemstorage функция конвертации объекта Metrics в Memstorage.
 func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memstorage.MemStorage, error) {
 	stor, _ := memstorage.New(ctx)
 	for _, m := range metrics {
@@ -70,7 +72,7 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	return stor, nil
 }
 
-// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context
+// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context.
 func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
 	if config.Key == "" {
 		log.Println("config.Key is empty")
@@ -79,14 +81,13 @@ func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
 	h := hmac.New(sha256.New, []byte(config.Key))
 	h.Write(body)
 	hash := h.Sum(nil)
-	fmt.Printf("%x", hash)
 	log.Println("hash is:", hash)
-	log.Printf("HashSHA256 is : %x", hash)
 	c.Header("HashSHA256", hex.EncodeToString(hash))
 	return nil
 }
 
-// MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
+// MetricsHandler -- Gin handler обработки запросов по изменениям метрик через URL.
+// Обрабатывает GET запросы типа /update/:metricType/:metricName/:metricValue.
 func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
@@ -131,7 +132,8 @@ func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
-// MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
+// MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body.
+// Обрабатывает POST запросы на /update/ c JSON-ом метрики в body запроса.
 func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("MetricHandlerJSON START")
@@ -203,7 +205,8 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 	}
 }
 
-// MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
+// MetricHandlerBatchUpdate -- Gin handler обработки batch запроса по изменениям batch-а метрик через []Metrics в Body.
+// Обрабатывает POST запросы на /updates c JSON-ом с несколькими метраками в body запроса.
 func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
@@ -222,8 +225,6 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initcon
 		}
 
 		log.Println("MetricHandlerBatchUpdate: Requested JSON batch metric UPDATES with next []metric", tmpMetrics)
-
-		log.Println("MetricHandlerBatchUpdate: tmpMetrics : ", tmpMetrics, " -> store :", store)
 
 		j2 := io.NopCloser(bytes.NewBuffer(jsn))
 		log.Println("MetricHandlerBatchUpdate: Request from j2:", j2)
@@ -255,22 +256,47 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initcon
 	}
 }
 
-// GetAllMetrics получить все метрики
+// memStor тип для кастования в него объекта memstorage.MemStorage перед кодированием в JSON из-за приватности исходных полей.
+type memStor struct {
+	GaugeMap   map[string]float64
+	CounterMap map[string]int64
+}
+
+// GetAllMetrics Gin handler получения всех метрик.
+// Обрабатывает GET запросы на / .
 func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
+		var t memStor
 		metrics, err := store.GetAllMetrics(ctx)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		c.Header("content-type", "text/html; charset=utf-8")
-		c.Status(http.StatusOK)
-		c.IndentedJSON(http.StatusOK, metrics)
+		// metrics может быть типа memstorage.MemStorage. В этом случае из-за приватности map этого типа
+		// он не будет правильно кодироваться в JSON. Необходимо кастовать в тип memStor.
+		switch metrics.(type) {
+		case memstorage.MemStorage:
+			log.Println("GetAllMetrics: MemStorage")
+			m, ok := metrics.(memstorage.MemStorage)
+			if !ok {
+				log.Println("GetAllMetrics error cast metric")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			t.GaugeMap, err = m.GetAllGaugesMap(ctx)
+			t.CounterMap, err = m.GetAllCountersMap(ctx)
+			c.Header("content-type", "text/html; charset=utf-8")
+			c.IndentedJSON(http.StatusOK, t)
+		default:
+			c.Header("content-type", "text/html; charset=utf-8")
+			log.Println("GetAllMetrics: Unknown type")
+			c.IndentedJSON(http.StatusOK, metrics)
+		}
 	}
 }
 
-// GetMetric получить значение метрики
+// GetMetric Gin handler получения значение метрики.
+// Обрабатывает GET запросы типа /value/:metricType/:metricName.
 func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
@@ -294,7 +320,8 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
-// GetMetricJSON получить значение метрики через JSON
+// GetMetricJSON Gin handler получения значения метрики через POST запрос с JSON с параметрами запрошенной метрики.
+// Обрабатывает POST запросы на /value/.
 func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
@@ -361,6 +388,8 @@ func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) g
 	}
 }
 
+// DBPing Gin handler проверки соединения с БД.
+// Обрабатывает GET запрос на /ping.
 func DBPing(connStr string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Тест коннекта к базе
