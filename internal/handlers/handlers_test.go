@@ -442,14 +442,19 @@ func ExampleGetAllMetrics_oneMore() {
 		log.Println("ExampleGetAllMetrics: http.NewRequest error:", err)
 	}
 	w := httptest.NewRecorder()
-
+	//Client := &http.Client{}
 	r.ServeHTTP(w, req)
 	w.Result().Body.Close()
+	//resp, err := Client.Do(req)
+	//defer resp.Body.Close()
 	var memStore tmpMemStorage
+
 	err = json.NewDecoder(w.Result().Body).Decode(&memStore)
+	io.Copy(io.Discard, w.Result().Body)
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
+	log.Println("w.Result().Close", w.Result().Close)
 	fmt.Println(w.Result().Status)
 	fmt.Println(memStore)
 
