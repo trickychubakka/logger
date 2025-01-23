@@ -403,6 +403,7 @@ type tmpMemStorage struct {
 }
 
 func ExampleGetAllMetrics() {
+	gin.SetMode(gin.TestMode)
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
@@ -426,7 +427,35 @@ func ExampleGetAllMetrics() {
 	// Output:
 	// 200 OK
 	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
+}
 
+func ExampleGetAllMetrics_oneMore() {
+	gin.SetMode(gin.TestMode)
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	r := gin.Default()
+	r.GET("/", GetAllMetrics(context.Background(), store))
+	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	if err != nil {
+		//t.Fatalf("Couldn't create request: %v\n", err)
+		log.Println("ExampleGetAllMetrics: http.NewRequest error:", err)
+	}
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	w.Result().Body.Close()
+	var memStore tmpMemStorage
+	err = json.NewDecoder(w.Result().Body).Decode(&memStore)
+	if err != nil {
+		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
+	}
+	fmt.Println(w.Result().Status)
+	fmt.Println(memStore)
+
+	// Output:
+	// 200 OK
+	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
 }
 
 func ExampleGetAllMetrics_second() {
