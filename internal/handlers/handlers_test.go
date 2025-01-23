@@ -300,7 +300,6 @@ func ExampleGetMetric() {
 	r := httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
 
 	c := SetTestGinContext(w, r)
-	r.Body.Close() //
 	GetMetric(ctx, &store)(c)
 	defer w.Result().Body.Close()
 	res := c.Writer
@@ -369,8 +368,8 @@ func TestGetAllMetrics(t *testing.T) {
 }
 
 type tmpMemStorage struct {
-	gaugeMap   map[string]float64
-	counterMap map[string]int64
+	GaugeMap   map[string]float64
+	CounterMap map[string]int64
 }
 
 func ExampleGetAllMetrics() {
@@ -390,13 +389,16 @@ func ExampleGetAllMetrics() {
 	res := c.Writer
 	defer w.Result().Body.Close()
 	// Read and print response.
-	jsn, _ := io.ReadAll(w.Result().Body)
+	//jsn, _ := io.ReadAll(w.Result().Body)
+
+	var memStore tmpMemStorage                         //
+	json.NewDecoder(w.Result().Body).Decode(&memStore) //
 
 	//if err != nil {
 	//	log.Println("io.ReadAll error:", err)
 	//}
-	var memStore memstorage.MemStorage
-	memstorage.Unmarshal(jsn, &memStore)
+	//var memStore memstorage.MemStorage
+	//memstorage.Unmarshal(jsn, &memStore)
 
 	fmt.Println(res.Status())
 	fmt.Println(memStore)
