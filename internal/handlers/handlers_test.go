@@ -318,6 +318,36 @@ func ExampleGetMetric() {
 	// 7.77
 }
 
+//func TestFunc(t *testing.T) {
+//	ctx := context.Background()
+//	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+//	store := createTestStor(ctx)
+//	// Создадим в Store метрику metric1 со значением 7.77
+//	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
+//		log.Println("ExampleGetMetric UpdateGauge error", err)
+//	}
+//	w := httptest.NewRecorder()
+//	//defer w.Result().Body.Close()
+//	c, engine := gin.CreateTestContext(w)
+//
+//	//req, _ := http.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
+//	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+//
+//	// What do I do with `ctx`? Is there a way to inject this into my test?
+//	engine.GET("/", GetAllMetrics(ctx, store))
+//	engine.GET("/value/:metricType/:metricName", GetMetric(ctx, store))
+//	engine.ServeHTTP(w, req)
+//
+//	w.Result().Body.Close()
+//	log.Println("c.Status is", c.Writer.Status())
+//	jsn, _ := io.ReadAll(w.Result().Body)
+//	fmt.Println(string(jsn))
+//	log.Println("Body Closed?", w.Result().Close)
+//	//log.Println(w.Result().Body)
+//	//assert.Equal(t, 302, w.Result().StatusCode)
+//	//assert.Equal(t, "/login", w.Result().Header.Get(HeaderLocation))
+//}
+
 func TestGetAllMetrics(t *testing.T) {
 	type args struct {
 		w *httptest.ResponseRecorder
@@ -376,10 +406,32 @@ func ExampleGetAllMetrics() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
+	w := httptest.NewRecorder()
+	//c, engine := gin.CreateTestContext(w)
+	_, engine := gin.CreateTestContext(w)
+
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+
+	engine.GET("/", GetAllMetrics(context.Background(), store))
+	engine.ServeHTTP(w, req)
+	defer w.Result().Body.Close()
+	var memStore tmpMemStorage
+	json.NewDecoder(w.Result().Body).Decode(&memStore)
+	fmt.Println(w.Result().Status)
+	fmt.Println(memStore)
+
+	// Output:
+	// 200 OK
+	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
+
+}
+
+func ExampleGetAllMetrics_second() {
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
 	s, _ := store.GetAllMetrics(ctx)
 	log.Println("1", s)
-
-	//var store, _ = memstorage.New(ctx)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -387,18 +439,14 @@ func ExampleGetAllMetrics() {
 	c := SetTestGinContext(w, r)
 	GetAllMetrics(ctx, store)(c)
 	res := c.Writer
-	//defer w.Result().Body.Close()
+	defer w.Result().Body.Close()
 	// Read and print response.
-	//jsn, _ := io.ReadAll(w.Result().Body)
-	w.Result().Body.Close()
-	var memStore tmpMemStorage                         //
-	json.NewDecoder(w.Result().Body).Decode(&memStore) //
-
-	//if err != nil {
-	//	log.Println("io.ReadAll error:", err)
-	//}
-	//var memStore memstorage.MemStorage
-	//memstorage.Unmarshal(jsn, &memStore)
+	jsn, err := io.ReadAll(w.Result().Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
+	var memStore memstorage.MemStorage
+	memstorage.Unmarshal(jsn, &memStore)
 
 	fmt.Println(res.Status())
 	fmt.Println(memStore)
