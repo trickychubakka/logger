@@ -414,9 +414,12 @@ func ExampleGetAllMetrics() {
 
 	engine.GET("/", GetAllMetrics(context.Background(), store))
 	engine.ServeHTTP(w, req)
-	defer w.Result().Body.Close()
+	w.Result().Body.Close()
 	var memStore tmpMemStorage
-	json.NewDecoder(w.Result().Body).Decode(&memStore)
+	err := json.NewDecoder(w.Result().Body).Decode(&memStore)
+	if err != nil {
+		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
+	}
 	fmt.Println(w.Result().Status)
 	fmt.Println(memStore)
 
