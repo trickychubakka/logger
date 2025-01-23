@@ -1,3 +1,4 @@
+// Package compress -- пакет с объектами, используемыми для HTTP сжатия.
 package compress
 
 import (
@@ -13,9 +14,9 @@ import (
 	"log"
 	"logger/cmd/server/initconf"
 	"net/http"
-	"strings"
 )
 
+// const синонимы для степеней сжатия из пакета compress/gzip
 const (
 	BestCompression    = gzip.BestCompression
 	BestSpeed          = gzip.BestSpeed
@@ -23,6 +24,7 @@ const (
 	NoCompression      = gzip.NoCompression
 )
 
+// contentTypeToCompressMap -- map с вариантами Content-Type, для которых отрабатывает сжатие.
 var contentTypeToCompressMap = map[string]bool{
 	"text/html":                true,
 	"text/html; charset=utf-8": true,
@@ -44,51 +46,7 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 	return g.writer.Write([]byte(s))
 }
 
-//func GzipResponseHandle(level int) gin.HandlerFunc {
-//	return func(c *gin.Context) {
-//
-//		if !shouldCompress(c.Request) {
-//			c.Next()
-//			return
-//		}
-//		// создаём compress.Writer поверх текущего c.Writer
-//		gz, err := gzip.NewWriterLevel(c.Writer, level)
-//		if err != nil {
-//			io.WriteString(c.Writer, err.Error())
-//			return
-//		}
-//		c.Header("Content-Encoding", "compress")
-//		c.Header("Vary", "Accept-Encoding")
-//		c.Writer = &gzipWriter{c.Writer, gz}
-//		defer func() {
-//			c.Header("Content-Length", "0")
-//			gz.Close()
-//		}()
-//		c.Next()
-//	}
-//}
-
-func shouldCompress(req *http.Request) bool {
-	if !strings.Contains(req.Header.Get("Accept-Encoding"), "compress") {
-		log.Println("There is no Accept-Encoding.")
-		return false
-	}
-
-	// Если Content-Type запроса содержится в contentTypeToCompressMap -- включается сжатие
-	if contentTypeToCompressMap[req.Header.Get("content-type")] {
-		log.Println("compress compression for Content-Type", req.Header.Get("content-type"), "enabled")
-		return true
-	}
-
-	if contentTypeToCompressMap[req.Header.Get("Accept")] {
-		log.Println("compress compression for Content-Type", req.Header.Get("content-type"), "enabled")
-		return true
-	}
-
-	log.Println("Default - do not encode. Content-Type is", req.Header.Get("Content-Type"))
-	return false
-}
-
+// checkSign функция проверки подписи.
 func checkSign(body []byte, hash string, config *initconf.Config) (bool, error) {
 	if config.Key == "" {
 		return false, nil
@@ -117,12 +75,13 @@ func checkSign(body []byte, hash string, config *initconf.Config) (bool, error) 
 	}
 }
 
+// GzipRequestHandle хэндлер распаковки body входящего Request запроса.
 func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body []byte
 		var newBody *bytes.Reader
 		var gz *gzip.Reader
-		var err error
+		var err, err1 error
 		if c.Request.Header.Get(`Content-Encoding`) == `compress` {
 			log.Println("c.Request.Header.Get(\"HashSHA256\") is :", c.Request.Header.Get("HashSHA256"))
 			if hash := c.Request.Header.Get("HashSHA256"); hash != "" {
@@ -136,22 +95,26 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 				if keyBool {
 					if err != nil {
 						log.Println("GzipRequestHandle: checkSign error", err)
+						c.Set("GzipRequestHandle", "error") // For test.
 						c.Status(http.StatusBadRequest)
 						return
 					}
 				}
-				// Ввиду того, что c.Request.Body был вычитан s body с помощью io.ReadAll -- делаем его копию для передачи в gz
+				// Ввиду того, что c.Request.Body был вычитан из body с помощью io.ReadAll -- делаем его копию для передачи в gz.
+
 				newBody = bytes.NewReader(body)
-				gz, err = gzip.NewReader(newBody)
-				if err != nil {
-					log.Println("Error in GzipRequestHandle:", err)
+				gz, err1 = gzip.NewReader(newBody)
+				if err1 != nil {
+					log.Println("Error in GzipRequestHandle1:", err1)
+					c.Set("GzipRequestHandle", "error") // For test.
 					c.Status(http.StatusInternalServerError)
 					return
 				}
 			} else {
 				gz, err = gzip.NewReader(c.Request.Body)
 				if err != nil {
-					log.Println("Error in GzipRequestHandle:", err)
+					log.Println("Error in GzipRequestHandle2:", err)
+					c.Set("GzipRequestHandle", "error") // For test.
 					c.Status(http.StatusInternalServerError)
 					return
 				}
@@ -160,6 +123,7 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 
 			defer gz.Close()
 			c.Request.Body = gz
+			c.Set("GzipRequestHandle", "success") // For test.
 			c.Next()
 		}
 	}

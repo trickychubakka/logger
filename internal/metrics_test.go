@@ -35,6 +35,32 @@ func TestMetricsPolling(t *testing.T) {
 	}
 }
 
+func TestGopsMetricPolling(t *testing.T) {
+	type args struct {
+		metrics MetricsStorage
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Positive Test TestGopsMetricPolling",
+			args: args{
+				metrics: NewMetricsStorageObj(),
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := GopsMetricPolling(&tt.args.metrics); (err != nil) != tt.wantErr {
+				t.Errorf("GopsMetricPolling() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestNewMetricsObj(t *testing.T) {
 	tests := []struct {
 		name string
@@ -105,6 +131,112 @@ func TestSendMetrics(t *testing.T) {
 	}
 }
 
+func TestSendMetricsJSONBatch(t *testing.T) {
+	type args struct {
+		metrics *MetricsStorage
+		c       string
+		config  *conf.AgentConfig
+	}
+	metrics := MetricsStorage{
+		gaugeMap:   make(map[string]float64),
+		counterMap: make(map[string]int64),
+	}
+	metrics.gaugeMap["metric1"] = 1.1
+	metrics.gaugeMap["metric2"] = 2.2
+	metrics.counterMap["metric1"] = 1
+	metrics.counterMap["metric2"] = 2
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Positive Test SendMetrics",
+			args: args{
+				metrics: &metrics,
+				c:       "/updates",
+				config: &conf.AgentConfig{
+					Key: "testkey",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/updates" {
+					t.Errorf("Expected to request '/updates', got: %s", r.URL.Path)
+				}
+				if r.Header.Get("Content-Type") != "application/json" {
+					t.Errorf("Expected Content-Type: application/json header, got: %s", r.Header.Get("Content-Type"))
+				}
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			if err := SendMetricsJSONBatch(tt.args.metrics, server.URL+tt.args.c, tt.args.config); (err != nil) != tt.wantErr {
+				t.Errorf("SendMetricsJSONBatch() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestSendMetricsJSON(t *testing.T) {
+	type args struct {
+		metrics *MetricsStorage
+		c       string
+		config  *conf.AgentConfig
+	}
+	metrics := MetricsStorage{
+		gaugeMap:   make(map[string]float64),
+		counterMap: make(map[string]int64),
+	}
+	metrics.gaugeMap["metric1"] = 1.1
+	metrics.counterMap["metric1"] = 1
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Positive Test SendMetrics",
+			args: args{
+				metrics: &metrics,
+				c:       "/updates",
+				config: &conf.AgentConfig{
+					Key: "testkey",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path != "/updates" {
+					t.Errorf("Expected to request '/updates', got: %s", r.URL.Path)
+				}
+				if r.Header.Get("Content-Type") != "application/json" {
+					t.Errorf("Expected Content-Type: application/json header, got: %s", r.Header.Get("Content-Type"))
+				}
+				w.Header().Set("Content-Type", "text/plain")
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer server.Close()
+
+			if err := SendMetricsJSON(tt.args.metrics, server.URL+tt.args.c, tt.args.config); (err != nil) != tt.wantErr {
+				t.Errorf("SendMetricsJSON() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestSendRequest(t *testing.T) {
 	type args struct {
 		client *http.Client
@@ -156,5 +288,35 @@ func TestSendRequest(t *testing.T) {
 			}
 			res.Body.Close()
 		})
+	}
+}
+
+func Test_hashBody(t *testing.T) {
+	body := []byte("Test body")
+	config := conf.AgentConfig{
+		Key: "superkey",
+	}
+	if _, ok := hashBody(body, &config); !ok {
+		t.Errorf("hashBody() error = %v", ok)
+	}
+}
+
+func createMetricsStore() MetricsStorage {
+	return MetricsStorage{
+		gaugeMap:   map[string]float64{"Gauge1": 1.1, "Gauge2": 2.2},
+		counterMap: map[string]int64{"Counter1": 1, "Counter2": 2},
+	}
+}
+
+func TestMemstorageToMetrics(t *testing.T) {
+	type args struct {
+		store MetricsStorage
+	}
+	a := args{
+		store: createMetricsStore(),
+	}
+	_, err := MemstorageToMetrics(a.store)
+	if err != nil {
+		t.Errorf("MemstorageToMetrics() error = %v", err)
 	}
 }

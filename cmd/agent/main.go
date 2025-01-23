@@ -1,3 +1,4 @@
+// Logger агент сбора метрик операционной системы и отправки их на logger-сервер
 package main
 
 import (
@@ -17,7 +18,7 @@ import (
 	"time"
 )
 
-// FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании
+// FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании.
 var FlagTest = false
 
 const (
@@ -27,7 +28,7 @@ const (
 
 var srv *http.Server
 
-// metricsPolling функция сбора метрик
+// metricsPolling функция сбора метрик.
 func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
 	log.Println("start metricsPolling goroutine")
 	counter := 1
@@ -53,7 +54,7 @@ func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Me
 	}
 }
 
-// gopsMetricsPolling функция сбора метрик, собранных через gopsutil
+// gopsMetricsPolling функция сбора метрик, собранных через gopsutil.
 func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
 	log.Println("start gopsMetricsPolling goroutine")
 	counter := 1
@@ -79,7 +80,7 @@ func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *interna
 	}
 }
 
-// metricReport функция отсылки метрик на сервер
+// metricReport функция отсылки метрик на logger сервер.
 func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
 	log.Println("start metricsReport goroutine")
 	counter := 1
@@ -94,9 +95,9 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 				m.RLock()
 				log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
 				if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
-					// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err
-					// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount
-					// Если это не client.Do ошибка -- сразу возвращаем error
+					// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err.
+					// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount.
+					// Если это не client.Do ошибка -- сразу возвращаем error.
 					if strings.Contains(err.Error(), "client.Do error") && errorCount >= clientDoErrors {
 						log.Println("main: client.Do error from SendMetricsJSONBatch:", err, "errorCount > 3, raise panic")
 						return err
@@ -117,24 +118,23 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 	}
 }
 
-// startHTTPServer -- start HTTP server for pprof
+// startHTTPServer -- start HTTP server for pprof.
 func startHTTPServer(wg *sync.WaitGroup) *http.Server {
 	srv := &http.Server{Addr: addr}
 
 	go func() {
-		defer wg.Done() // let main know we are done cleaning up
-
-		// always returns error. ErrServerClosed on graceful close
+		defer wg.Done()
+		// always returns error. ErrServerClosed on graceful close.
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			// unexpected error. port in use?
 			log.Fatalf("startHTTPServer ListenAndServe(): %v", err)
 		}
 	}()
-	// returning reference so caller can call Shutdown()
+	// returning reference so caller can call Shutdown().
 	return srv
 }
 
-// Run функция запуска горутин polling-а метрик и их отсылки на сервер
+// Run функция запуска горутин polling-а метрик и их отсылки на logger сервер.
 func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var m sync.RWMutex
@@ -168,7 +168,7 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 		}
 	}()
 
-	//starting pprof http.server
+	// Starting pprof http.server.
 	if config.PProfHTTPEnabled {
 		log.Println("start pprof web server")
 		wg.Add(1)
@@ -178,7 +178,7 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 	<-exit
-	// Graceful shutdown pprof http server if option -t enabled
+	// Graceful shutdown pprof http server if option -t enabled.
 	if config.PProfHTTPEnabled {
 		if err := srv.Shutdown(ctx); err != nil {
 			log.Println("run, failure/timeout shutting down the server gracefully, error is:", err)
