@@ -1,5 +1,7 @@
+// Package conf -- пакет, содержащий объекты конфигураций logger.
 package conf
 
+// Config конфигурация logger сервера.
 type Config struct {
 	Database struct {
 		Host     string `mapstructure:"host"`
@@ -10,12 +12,13 @@ type Config struct {
 	}
 }
 
+// AgentConfig конфигурация logger агента.
 type AgentConfig struct {
-	PollInterval     int
-	ReportInterval   int
-	Address          string
-	Logfile          string
-	Key              string
-	RateLimit        int
-	PProfHTTPEnabled bool
+	PollInterval     int    // Agent metric polling interval.
+	ReportInterval   int    // Agent metric report interval.
+	Address          string // Logger server address and port.
+	Logfile          string // Agent log file.
+	Key              string // HMAC key.
+	RateLimit        int    // Rate limit for agent connections to server.
+	PProfHTTPEnabled bool   // Flag for enabling pprof web server.
 }
