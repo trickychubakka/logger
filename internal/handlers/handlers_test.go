@@ -301,11 +301,12 @@ func ExampleGetMetric() {
 
 	c := SetTestGinContext(w, r)
 	GetMetric(ctx, &store)(c)
-	defer w.Result().Body.Close()
+	resp := w.Result()
+	defer resp.Body.Close()
 	res := c.Writer
 	// Read and print response.
 
-	jsn, _ := io.ReadAll(w.Result().Body)
+	jsn, _ := io.ReadAll(resp.Body)
 
 	//if err != nil {
 	//	log.Println("io.ReadAll error:", err)
@@ -415,9 +416,11 @@ func ExampleGetAllMetrics() {
 
 	engine.GET("/", GetAllMetrics(context.Background(), store))
 	engine.ServeHTTP(w, req)
-	w.Result().Body.Close()
+	resp := w.Result()
+	defer resp.Body.Close()
+
 	var memStore tmpMemStorage
-	err := json.NewDecoder(w.Result().Body).Decode(&memStore)
+	err := json.NewDecoder(resp.Body).Decode(&memStore)
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
@@ -446,8 +449,6 @@ func ExampleGetAllMetrics_oneMore() {
 	r.ServeHTTP(w, req)
 	resp := w.Result()
 	defer resp.Body.Close()
-	//resp, err := Client.Do(req)
-	//defer resp.Body.Close()
 	w.Result().Body.Close()
 	var memStore tmpMemStorage
 	err = json.NewDecoder(resp.Body).Decode(&memStore)
@@ -477,9 +478,10 @@ func ExampleGetAllMetrics_second() {
 	c := SetTestGinContext(w, r)
 	GetAllMetrics(ctx, store)(c)
 	res := c.Writer
-	defer w.Result().Body.Close()
+	resp := w.Result()
+	defer resp.Body.Close()
 	// Read and print response.
-	jsn, err := io.ReadAll(w.Result().Body)
+	jsn, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
