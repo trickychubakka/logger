@@ -324,11 +324,12 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
-		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
+
 		if err != nil {
 			http.Error(c.Writer, "GetMetricJSON: Error in json body read", http.StatusInternalServerError)
 			return
 		}
+		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
 
 		var tmpMetric storage.Metrics
 

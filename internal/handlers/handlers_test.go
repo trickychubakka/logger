@@ -300,10 +300,12 @@ func ExampleGetMetric() {
 	r := httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
 
 	c := SetTestGinContext(w, r)
+
 	GetMetric(ctx, &store)(c)
+	defer w.Result().Body.Close()
 	res := c.Writer
 	// Read and print response.
-	defer w.Result().Body.Close()
+
 	jsn, _ := io.ReadAll(w.Result().Body)
 
 	//if err != nil {
@@ -759,11 +761,11 @@ func ExampleGetMetricJSON() {
 	fmt.Println(res.Header().Get("Content-Type"))
 
 	// Read and print response.
-	jsn, err := io.ReadAll(w.Result().Body)
+	jsn, _ := io.ReadAll(w.Result().Body)
 	w.Result().Body.Close()
-	if err != nil {
-		log.Println("io.ReadAll error:", err)
-	}
+	//if err != nil {
+	//	log.Println("io.ReadAll error:", err)
+	//}
 	fmt.Println(string(jsn))
 
 	// Output:
