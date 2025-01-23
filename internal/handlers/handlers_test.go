@@ -444,13 +444,14 @@ func ExampleGetAllMetrics_oneMore() {
 	w := httptest.NewRecorder()
 	//Client := &http.Client{}
 	r.ServeHTTP(w, req)
-	w.Result().Body.Close()
+	resp := w.Result()
+	defer resp.Body.Close()
 	//resp, err := Client.Do(req)
 	//defer resp.Body.Close()
+	w.Result().Body.Close()
 	var memStore tmpMemStorage
-
-	err = json.NewDecoder(w.Result().Body).Decode(&memStore)
-	io.Copy(io.Discard, w.Result().Body)
+	err = json.NewDecoder(resp.Body).Decode(&memStore)
+	//io.Copy(io.Discard, w.Result().Body) // for close the body?
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
