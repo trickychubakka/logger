@@ -300,7 +300,7 @@ func ExampleGetMetric() {
 	r := httptest.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
 
 	c := SetTestGinContext(w, r)
-	r.Body.Close() // TODO
+	r.Body.Close() //
 	GetMetric(ctx, &store)(c)
 	defer w.Result().Body.Close()
 	res := c.Writer
