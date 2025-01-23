@@ -390,10 +390,10 @@ func ExampleGetAllMetrics() {
 	//defer w.Result().Body.Close()
 	// Read and print response.
 	//jsn, _ := io.ReadAll(w.Result().Body)
-
+	w.Result().Body.Close()
 	var memStore tmpMemStorage                         //
 	json.NewDecoder(w.Result().Body).Decode(&memStore) //
-	w.Result().Body.Close()
+
 	//if err != nil {
 	//	log.Println("io.ReadAll error:", err)
 	//}
