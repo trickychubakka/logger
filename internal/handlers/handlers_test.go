@@ -393,7 +393,7 @@ func ExampleGetAllMetrics() {
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
-	fmt.Println(w.Result().Status)
+	fmt.Println(resp.Status)
 	fmt.Println(memStore)
 
 	// Output:
@@ -424,8 +424,7 @@ func ExampleGetAllMetrics_oneMore() {
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
-	log.Println("w.Result().Close", w.Result().Close)
-	fmt.Println(w.Result().Status)
+	fmt.Println(resp.Status)
 	fmt.Println(memStore)
 
 	// Output:
