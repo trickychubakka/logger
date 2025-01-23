@@ -306,11 +306,10 @@ func ExampleGetMetric() {
 	res := c.Writer
 	// Read and print response.
 
-	jsn, _ := io.ReadAll(resp.Body)
-
-	//if err != nil {
-	//	log.Println("io.ReadAll error:", err)
-	//}
+	jsn, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
 	fmt.Println(res.Status())
 	fmt.Println(string(jsn))
 
@@ -318,36 +317,6 @@ func ExampleGetMetric() {
 	// 200
 	// 7.77
 }
-
-//func TestFunc(t *testing.T) {
-//	ctx := context.Background()
-//	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
-//	store := createTestStor(ctx)
-//	// Создадим в Store метрику metric1 со значением 7.77
-//	if err := store.UpdateGauge(ctx, "metric1", 7.77); err != nil {
-//		log.Println("ExampleGetMetric UpdateGauge error", err)
-//	}
-//	w := httptest.NewRecorder()
-//	//defer w.Result().Body.Close()
-//	c, engine := gin.CreateTestContext(w)
-//
-//	//req, _ := http.NewRequest(http.MethodGet, "/value/gauge/metric1", nil)
-//	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-//
-//	// What do I do with `ctx`? Is there a way to inject this into my test?
-//	engine.GET("/", GetAllMetrics(ctx, store))
-//	engine.GET("/value/:metricType/:metricName", GetMetric(ctx, store))
-//	engine.ServeHTTP(w, req)
-//
-//	w.Result().Body.Close()
-//	log.Println("c.Status is", c.Writer.Status())
-//	jsn, _ := io.ReadAll(w.Result().Body)
-//	fmt.Println(string(jsn))
-//	log.Println("Body Closed?", w.Result().Close)
-//	//log.Println(w.Result().Body)
-//	//assert.Equal(t, 302, w.Result().StatusCode)
-//	//assert.Equal(t, "/login", w.Result().Header.Get(HeaderLocation))
-//}
 
 func TestGetAllMetrics(t *testing.T) {
 	type args struct {
@@ -445,14 +414,13 @@ func ExampleGetAllMetrics_oneMore() {
 		log.Println("ExampleGetAllMetrics: http.NewRequest error:", err)
 	}
 	w := httptest.NewRecorder()
-	//Client := &http.Client{}
 	r.ServeHTTP(w, req)
+
 	resp := w.Result()
 	defer resp.Body.Close()
-	w.Result().Body.Close()
+
 	var memStore tmpMemStorage
 	err = json.NewDecoder(resp.Body).Decode(&memStore)
-	//io.Copy(io.Discard, w.Result().Body) // for close the body?
 	if err != nil {
 		log.Println("ExampleGetAllMetrics: json.NewDecoder error:", err)
 	}
@@ -849,13 +817,14 @@ func ExampleGetMetricJSON() {
 	res := c.Writer
 	fmt.Println(res.Status())
 	fmt.Println(res.Header().Get("Content-Type"))
+	resp := w.Result()
+	defer resp.Body.Close()
 
 	// Read and print response.
-	jsn, _ := io.ReadAll(w.Result().Body)
-	w.Result().Body.Close()
-	//if err != nil {
-	//	log.Println("io.ReadAll error:", err)
-	//}
+	jsn, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
 	fmt.Println(string(jsn))
 
 	// Output:
