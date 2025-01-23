@@ -52,6 +52,11 @@ func createMetricsArray() []storage.Metrics {
 	return tmpMetrics
 }
 
+type tmpMemStorage struct {
+	GaugeMap   map[string]float64
+	CounterMap map[string]int64
+}
+
 func TestMetricsHandler(t *testing.T) {
 	type args struct {
 		w *httptest.ResponseRecorder
@@ -367,19 +372,14 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 }
 
-type tmpMemStorage struct {
-	GaugeMap   map[string]float64
-	CounterMap map[string]int64
-}
-
 func ExampleGetAllMetrics() {
+	// Example with Gin middleware with gin Context
 	gin.SetMode(gin.TestMode)
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
 	w := httptest.NewRecorder()
-	//c, engine := gin.CreateTestContext(w)
-	_, engine := gin.CreateTestContext(w)
+	c, engine := gin.CreateTestContext(w)
 
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
 
@@ -387,7 +387,7 @@ func ExampleGetAllMetrics() {
 	engine.ServeHTTP(w, req)
 	resp := w.Result()
 	defer resp.Body.Close()
-
+	log.Println("Some data from Gin context:", c.Writer.Header().Get("Content-Type"))
 	var memStore tmpMemStorage
 	err := json.NewDecoder(resp.Body).Decode(&memStore)
 	if err != nil {
@@ -401,7 +401,8 @@ func ExampleGetAllMetrics() {
 	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
 }
 
-func ExampleGetAllMetrics_oneMore() {
+func ExampleGetAllMetrics_withNoGinContext() {
+	// Example with Gin middleware with no gin Context
 	gin.SetMode(gin.TestMode)
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
@@ -432,7 +433,7 @@ func ExampleGetAllMetrics_oneMore() {
 	// {map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]}
 }
 
-func ExampleGetAllMetrics_second() {
+func ExampleGetAllMetrics_withUseSetTestGinContext() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
@@ -814,8 +815,6 @@ func ExampleGetMetricJSON() {
 	GetMetricJSON(ctx, store, conf)(c)
 	// read result from Gin context:
 	res := c.Writer
-	fmt.Println(res.Status())
-	fmt.Println(res.Header().Get("Content-Type"))
 	resp := w.Result()
 	defer resp.Body.Close()
 
@@ -824,6 +823,8 @@ func ExampleGetMetricJSON() {
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
 	}
+	fmt.Println(res.Status())
+	fmt.Println(res.Header().Get("Content-Type"))
 	fmt.Println(string(jsn))
 
 	// Output:
@@ -831,8 +832,43 @@ func ExampleGetMetricJSON() {
 	// application/json
 	// {"id":"Counter2","type":"counter","delta":2}
 }
-
 func ExampleGetMetricJSON_second() {
+	// Try to request from logger server next metric: {"id": "Counter2", "type": "counter"}
+	requestedMetric := `{"id": "Counter2", "type": "counter"}`
+	gin.SetMode(gin.TestMode)
+	ctx := context.Background()
+	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
+	store := createTestStor(ctx)
+	conf := initconf.Config{
+		Key: "superkey",
+	}
+	w := httptest.NewRecorder()
+	_, engine := gin.CreateTestContext(w)
+
+	req, _ := http.NewRequest(http.MethodPost, "/value/", bytes.NewReader([]byte(requestedMetric)))
+
+	engine.POST("/value/", GetMetricJSON(context.Background(), store, &conf))
+	engine.ServeHTTP(w, req)
+
+	resp := w.Result()
+	defer resp.Body.Close()
+
+	jsn, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("io.ReadAll error:", err)
+	}
+
+	fmt.Println(resp.Status)
+	fmt.Println(resp.Header.Get("Content-Type"))
+	fmt.Println(string(jsn))
+
+	// Output:
+	// 200 OK
+	// application/json
+	// {"id":"Counter2","type":"counter","delta":2}
+}
+
+func ExampleGetMetricJSON_statusNotFound() {
 	// Try to request from logger server next metric: {"id": "Counter200", "type": "counter"}
 	requestedMetric := `{"id": "Counter200", "type": "counter"}`
 	ctx := context.Background()

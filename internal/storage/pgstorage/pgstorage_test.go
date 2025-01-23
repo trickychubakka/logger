@@ -24,7 +24,7 @@ var ErrNoDSN = errors.New("DATABASE_DSN env is not set")
 // Иначе возвращается пустая строка и false, отрабатывают пустые fake тесты.
 func CheckDB() (string, bool) {
 	// For local unit test use ONLY.
-	//os.Setenv("DATABASE_DSN", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable") // TODO закомментировать при коммите во внешний репо!
+	//os.Setenv("DATABASE_DSN", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable") // закомментировать при коммите во внешний репо!
 	dsn, ok := os.LookupEnv("DATABASE_DSN")
 	return dsn, ok
 }
