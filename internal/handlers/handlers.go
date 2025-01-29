@@ -399,7 +399,12 @@ func DBPing(connStr string) gin.HandlerFunc {
 		if err != nil {
 			log.Println("Error connecting to database :", err)
 		}
-		defer db.Close()
+		defer func(db *database.Postgresql) {
+			err := db.Close()
+			if err != nil {
+				log.Println("DBPing: db.Close() error", err)
+			}
+		}(&db)
 		err = db.Ping()
 		if err != nil {
 			log.Println("database connect error")

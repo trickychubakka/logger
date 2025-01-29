@@ -20,12 +20,12 @@ func createTestStor(ctx context.Context) Storager {
 	if err != nil {
 		log.Fatal(err)
 	}
-	store.UpdateCounter(ctx, "Counter1", 1)
-	store.UpdateCounter(ctx, "Counter2", 2)
-	store.UpdateCounter(ctx, "Counter3", 3)
-	store.UpdateGauge(ctx, "Gauge1", 1.1)
-	store.UpdateGauge(ctx, "Gauge2", 2.2)
-	store.UpdateGauge(ctx, "Gauge3", 3.3)
+	_ = store.UpdateCounter(ctx, "Counter1", 1)
+	_ = store.UpdateCounter(ctx, "Counter2", 2)
+	_ = store.UpdateCounter(ctx, "Counter3", 3)
+	_ = store.UpdateGauge(ctx, "Gauge1", 1.1)
+	_ = store.UpdateGauge(ctx, "Gauge2", 2.2)
+	_ = store.UpdateGauge(ctx, "Gauge3", 3.3)
 	return store
 }
 
@@ -34,12 +34,12 @@ func createTestHandlersStor(ctx context.Context) handlers.Storager {
 	if err != nil {
 		log.Fatal(err)
 	}
-	store.UpdateCounter(ctx, "Counter1", 1)
-	store.UpdateCounter(ctx, "Counter2", 2)
-	store.UpdateCounter(ctx, "Counter3", 3)
-	store.UpdateGauge(ctx, "Gauge1", 1.1)
-	store.UpdateGauge(ctx, "Gauge2", 2.2)
-	store.UpdateGauge(ctx, "Gauge3", 3.3)
+	_ = store.UpdateCounter(ctx, "Counter1", 1)
+	_ = store.UpdateCounter(ctx, "Counter2", 2)
+	_ = store.UpdateCounter(ctx, "Counter3", 3)
+	_ = store.UpdateGauge(ctx, "Gauge1", 1.1)
+	_ = store.UpdateGauge(ctx, "Gauge2", 2.2)
+	_ = store.UpdateGauge(ctx, "Gauge3", 3.3)
 	return store
 }
 
@@ -124,7 +124,7 @@ func TestLoad(t *testing.T) {
 				_ = Save(context.Background(), tt.args.store, tt.args.fname)
 			}
 			if tt.args.fname == "./wrongfile.dmp" {
-				createFile(tt.args.fname)
+				_ = createFile(tt.args.fname)
 			}
 			defer deleteFile(tt.args.fname)
 			_, err := Load(tt.args.fname)

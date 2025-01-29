@@ -1,0 +1,71 @@
+{
+  "staticcheck": [
+    "allSA"
+  ],
+  "staticcheckexcl": [
+    "SA1000",
+    "SA1001"
+  ],
+
+  "stylecheck": [
+    "allST"
+  ],
+  "stylecheckexcl": [
+    "ST1022",
+    "ST1023"
+  ],
+  "analysis": [
+    "appends",
+    "asmdecl",
+    "assign",
+    "atomic",
+    "atomicalign",
+    "bools",
+    "buildssa",
+    "buildtag",
+    "cgocall",
+    "composite",
+    "copylock",
+    "ctrlflow",
+    "deepequalerrors",
+    "defers",
+    "directive",
+    "errorsas",
+    "findcall",
+    "framepointer",
+    "httpmux",
+    "httpresponse",
+    "ifaceassert",
+    "inspect",
+    "loopclosure",
+    "lostcancel",
+    "nilfunc",
+    "nilness",
+    "pkgfact",
+    "printf",
+    "reflectvaluecompare",
+    "shadow",
+    "shift",
+    "sigchanyzer",
+    "slog",
+    "sortslice",
+    "stdmethods",
+    "stdversion",
+    "stringintconv",
+    "structtag",
+    "testinggoroutine",
+    "tests",
+    "timeformat",
+    "unmarshal",
+    "unreachable",
+    "unsafeptr",
+    "unusedresult",
+    "unusedwrite",
+    "usesgenerics",
+    "waitgroup"
+  ],
+  "analysisexcl": [
+    "fieldalignment",
+    "shadow"
+  ]
+}

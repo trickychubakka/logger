@@ -190,7 +190,8 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 	wg.Wait()
 	log.Println("Main done")
 	log.Println("AGENT STOPPED.")
-	os.Exit(1)
+	//os.Exit(1)
+	log.Fatal()
 }
 
 func main() {
@@ -206,7 +207,12 @@ func main() {
 			log.Fatal("Failed to open log file:", err)
 		}
 		log.SetOutput(file)
-		defer file.Close()
+		defer func(file *os.File) {
+			err := file.Close()
+			if err != nil {
+				log.Println("Failed to close log file:", err)
+			}
+		}(file)
 	}
 
 	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", config.Address, config.PollInterval, config.ReportInterval, config.Logfile)

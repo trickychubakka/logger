@@ -128,7 +128,8 @@ func main() {
 			}
 		}
 		log.Println("SERVER STOPPED.")
-		os.Exit(1)
+		//os.Exit(1)
+		log.Fatal()
 	}()
 
 	// Создаём предустановленный регистратор zap.

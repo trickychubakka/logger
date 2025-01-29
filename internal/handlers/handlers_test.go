@@ -32,12 +32,12 @@ func createTestStor(ctx context.Context) memstorage.MemStorage {
 	if err != nil {
 		log.Fatal(err)
 	}
-	store.UpdateCounter(ctx, "Counter1", 1)
-	store.UpdateCounter(ctx, "Counter2", 2)
-	store.UpdateCounter(ctx, "Counter3", 3)
-	store.UpdateGauge(ctx, "Gauge1", 1.1)
-	store.UpdateGauge(ctx, "Gauge2", 2.2)
-	store.UpdateGauge(ctx, "Gauge3", 3.3)
+	_ = store.UpdateCounter(ctx, "Counter1", 1)
+	_ = store.UpdateCounter(ctx, "Counter2", 2)
+	_ = store.UpdateCounter(ctx, "Counter3", 3)
+	_ = store.UpdateGauge(ctx, "Gauge1", 1.1)
+	_ = store.UpdateGauge(ctx, "Gauge2", 2.2)
+	_ = store.UpdateGauge(ctx, "Gauge3", 3.3)
 	log.Println(store)
 	return store
 }
@@ -309,8 +309,8 @@ func ExampleGetMetric() {
 	resp := w.Result()
 	defer resp.Body.Close()
 	res := c.Writer
-	// Read and print response.
 
+	// Read and print response.
 	jsn, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("io.ReadAll error:", err)
