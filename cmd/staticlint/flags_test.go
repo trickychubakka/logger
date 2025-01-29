@@ -15,7 +15,6 @@ func Test_initConfig(t *testing.T) {
 
 	want := wantType{
 		wantErr: false,
-		Flag:    false,
 	}
 
 	if err := initConfig(); (err != nil) != want.wantErr {

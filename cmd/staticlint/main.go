@@ -138,7 +138,7 @@ func readConfig(configFile string) (ConfigData, error) {
 	}
 
 	// Вычищаем из конфигурационного файла закомментированные с "//" строки.
-	regex := regexp.MustCompile("//.*\\r\\n")
+	regex := regexp.MustCompile(`//.*\\r\\n`)
 	d := regex.ReplaceAllString(string(data), "")
 
 	if err = json.Unmarshal([]byte(d), &cfg); err != nil {
