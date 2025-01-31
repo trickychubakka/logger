@@ -154,7 +154,12 @@ func Test_readConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := createConfigFile(tt.args.configFile, tt.args.badConfig, tt.args.badFilePath)
-			defer removeConfigFile(tt.args.configFile)
+			defer func(filename string) {
+				err := removeConfigFile(filename)
+				if err != nil {
+					log.Println("removeConfigFile error:", err)
+				}
+			}(tt.args.configFile)
 			if err != nil {
 				t.Errorf("readConfig() error = %v", err)
 			}

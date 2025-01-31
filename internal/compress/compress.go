@@ -121,7 +121,12 @@ func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFu
 			}
 			log.Println("compress decompression")
 
-			defer gz.Close()
+			defer func(gz *gzip.Reader) {
+				err1 := gz.Close()
+				if err1 != nil {
+					log.Println("gz.Close() error")
+				}
+			}(gz)
 			c.Request.Body = gz
 			c.Set("GzipRequestHandle", "success") // For test.
 			c.Next()

@@ -31,13 +31,10 @@ type ConfigData struct {
 
 func ChecksCreate(cfg ConfigData, typeRegistry map[string]*analysis.Analyzer) ([]*analysis.Analyzer, error) {
 	mychecks := []*analysis.Analyzer{
-		//TODOCheckAnalyzer,
 		OSExitCheckAnalyzer,
 		printffuncname.Analyzer,
 		funlen.NewAnalyzer(220, 200, true),
 	}
-
-	//log.Println("errcheck.Analyzer.Flags", errcheck.Analyzer.Flags)
 
 	// Проверки для staticcheck и stylecheck разделов.
 	checks := make(map[string]bool)
@@ -85,24 +82,20 @@ func ChecksCreate(cfg ConfigData, typeRegistry map[string]*analysis.Analyzer) ([
 	}
 
 	for _, v := range staticcheck.Analyzers {
-		//fmt.Println("staticcheck analyzer:", v.Analyzer.Name)
 		if checks[v.Analyzer.Name] && !exclude[v.Analyzer.Name] {
 			mychecks = append(mychecks, v.Analyzer)
 		}
 	}
 
 	for _, v := range stylecheck.Analyzers {
-		//fmt.Println("staticcheck analyzer:", v.Analyzer.Name)
 		if checks[v.Analyzer.Name] && !exclude[v.Analyzer.Name] {
 			mychecks = append(mychecks, v.Analyzer)
 		}
 	}
+
 	// Добавляем анализаторы из набора стандартных статических анализаторов пакета golang.org/x/tools/go/analysis/passes.
 	// Используется предварительно созданный registry типов этих анализаторов typeRegistry[].
-
 	if len(cfg.Analysis) > 0 && cfg.Analysis[0] == "all" {
-		//log.Println("Add all analysis passes checkers")
-		//log.Println("typeRegistry is:", typeRegistry)
 		for k := range typeRegistry {
 			if !exclude[k] {
 				mychecks = append(mychecks, typeRegistry[k])

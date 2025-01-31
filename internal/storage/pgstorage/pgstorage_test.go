@@ -120,11 +120,8 @@ func TestNew(t *testing.T) {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			defer pg.Close()
-			//if !reflect.DeepEqual(got, tt.want) {
-			//	t.Errorf("New() got = %v, want %v", got, tt.want)
-			//}
-			dropTestTables(pg)
+			_ = dropTestTables(pg)
+			_ = pg.Close()
 		})
 	}
 }
@@ -152,18 +149,6 @@ func TestPgStorage_Close(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			//dsn, DBPresent = CheckDB()
-			//if !DBPresent {
-			//	log.Println("DATABASE_DSN env is not set, run fake test")
-			//	return
-			//}
-			//// Устанавливаем считанный из env DATABASE_DSN
-			//log.Println("Using DATABASE_DSN from env var")
-			//tt.args.conf.DatabaseDSN = dsn
-			//pg, err := New(context.Background(), tt.args.conf)
-			//if err != nil {
-			//	t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-			//}
 			pg, err := initTestDB(tt.args.conf)
 			if err != nil {
 				log.Println("DATABASE_DSN env is not set, run fake test")
@@ -176,7 +161,7 @@ func TestPgStorage_Close(t *testing.T) {
 				t.Errorf("Close() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			dropTestTables(pg)
+			_ = dropTestTables(pg)
 		})
 	}
 }
@@ -216,7 +201,7 @@ func TestPgStorage_GetAllMetrics(t *testing.T) {
 				t.Errorf("GetAllMetrics() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			dropTestTables(pg)
+			_ = dropTestTables(pg)
 		})
 	}
 }
@@ -280,7 +265,7 @@ func TestPgStorage_GetCounter(t *testing.T) {
 			}
 		})
 	}
-	dropTestTables(pg)
+	_ = dropTestTables(pg)
 }
 
 func TestPgStorage_GetGauge(t *testing.T) {
@@ -344,7 +329,7 @@ func TestPgStorage_GetGauge(t *testing.T) {
 			}
 		})
 	}
-	dropTestTables(pg)
+	_ = dropTestTables(pg)
 }
 
 func TestPgStorage_GetValue(t *testing.T) {
@@ -434,7 +419,7 @@ func TestPgStorage_GetValue(t *testing.T) {
 			}
 		})
 	}
-	dropTestTables(pg)
+	_ = dropTestTables(pg)
 }
 
 func TestPgStorage_UpdateBatch(t *testing.T) {
@@ -495,7 +480,7 @@ func TestPgStorage_UpdateBatch(t *testing.T) {
 			}
 		})
 	}
-	dropTestTables(pg)
+	_ = dropTestTables(pg)
 }
 
 func TestPgStorage_UpdateCounter(t *testing.T) {
@@ -545,7 +530,7 @@ func TestPgStorage_UpdateCounter(t *testing.T) {
 				t.Errorf("UpdateCounter() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			dropTestTables(pg)
+			_ = dropTestTables(pg)
 		})
 	}
 }
@@ -597,7 +582,7 @@ func TestPgStorage_UpdateGauge(t *testing.T) {
 				t.Errorf("UpdateGauge() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			dropTestTables(pg)
+			_ = dropTestTables(pg)
 		})
 	}
 }

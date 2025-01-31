@@ -18,6 +18,9 @@ import (
 	"time"
 )
 
+// Переменные для вывода информации при старте приложения.
+var buildVersion, buildDate, buildCommit string
+
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании.
 var FlagTest = false
 
@@ -39,7 +42,6 @@ func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Me
 			return nil
 		default:
 			if counter == config.PollInterval {
-				//log.Println("metricsPolling goroutine polling")
 				m.Lock()
 				if err := internal.MetricsPolling(myMetrics); err != nil {
 					log.Println("error in metricsPolling :", err)
@@ -195,6 +197,8 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 }
 
 func main() {
+
+	internal.PrintStartMessage(buildVersion, buildDate, buildCommit)
 
 	if err := initConfig(&config); err != nil {
 		log.Println("AGENT Panic from initConfig", err)

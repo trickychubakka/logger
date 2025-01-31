@@ -4,16 +4,6 @@ import (
 	"testing"
 )
 
-//func Test_createAnalysisTypesRegistry1(t *testing.T) {
-//	var wantErr bool = false
-//
-//	_, err := createAnalysisTypesRegistry()
-//	if (err != nil) != wantErr {
-//		t.Errorf("readConfig() error = %v, wantErr %v", err, wantErr)
-//		return
-//	}
-//}
-
 func Test_createAnalysisTypesRegistry(t *testing.T) {
 	tests := []struct {
 		name string

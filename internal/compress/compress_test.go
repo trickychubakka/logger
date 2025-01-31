@@ -34,8 +34,8 @@ func gzipBody(body []byte) []byte {
 	if err != nil {
 		log.Println("gzipBody error:", err)
 	}
-	w.Flush()
-	w.Close()
+	_ = w.Flush()
+	_ = w.Close()
 	return b.Bytes()
 }
 

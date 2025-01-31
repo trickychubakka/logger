@@ -35,6 +35,22 @@ func IsValidIP(ip string) bool {
 	return res != nil
 }
 
+// PrintStartMessage функция вывода значений buildVersion, buildDate, buildCommit при старте.
+// Переменные buildVersion, buildDate, buildCommit объявлены в main.go
+// Значения задаются флагами линковщика, определенными через -X при старте. Примеры:
+//
+//	$ go run -ldflags "-X main.buildVersion=v0.19.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=ITER19_PR1" ./main.go
+//	$ go build -ldflags "-X main.buildVersion=v0.19.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=ITER19_PR1" -o agent
+func PrintStartMessage(buildVersion, buildDate, buildCommit string) {
+	var printOptions = map[string]string{"version": buildVersion, "date": buildDate, "commit": buildCommit}
+	for k, option := range printOptions {
+		if option == "" {
+			printOptions[k] = "N/A"
+		}
+		log.Printf("Build %s: %s", k, printOptions[k])
+	}
+}
+
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании.
 var FlagTest = false
 

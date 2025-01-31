@@ -228,7 +228,12 @@ func Test_readDBConfig(t *testing.T) {
 			pathToDelete := fmt.Sprintf("%s\\%s", tt.args.path, tt.args.filename)
 			log.Println("pathToDelete:", pathToDelete)
 			// удаляем временный файл конфигурации
-			defer deleteDBConfig("TestDBConfig.yaml")
+			defer func() {
+				err := deleteDBConfig("TestDBConfig.yaml")
+				if err != nil {
+					log.Println("Test_readDBConfig Error:", err)
+				}
+			}()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("readDBConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return

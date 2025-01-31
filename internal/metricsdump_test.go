@@ -126,7 +126,12 @@ func TestLoad(t *testing.T) {
 			if tt.args.fname == "./wrongfile.dmp" {
 				_ = createFile(tt.args.fname)
 			}
-			defer deleteFile(tt.args.fname)
+			defer func(filename string) {
+				err := deleteFile(filename)
+				if err != nil {
+					log.Println("deleteFile error")
+				}
+			}(tt.args.fname)
 			_, err := Load(tt.args.fname)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Load() error = %v, wantErr %v", err, tt.wantErr)
@@ -172,7 +177,12 @@ func TestSave(t *testing.T) {
 			if err != nil {
 				log.Println("save error:", err)
 			}
-			defer deleteFile(tt.args.fname)
+			defer func(filename string) {
+				err := deleteFile(filename)
+				if err != nil {
+					log.Println("deleteFile error")
+				}
+			}(tt.args.fname)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Save() error = %v, wantErr %v", err, tt.wantErr)
 				return

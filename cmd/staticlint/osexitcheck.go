@@ -35,7 +35,6 @@ func runOSExitSearch(pass *analysis.Pass) (interface{}, error) {
 	fset := token.NewFileSet()
 
 	for _, file := range pass.Files {
-		//log.Println("AST file is :", file.Name)
 		ast.Inspect(file, func(n ast.Node) bool {
 			// проверяем, что лежащий в узле тип -- это вызов функции
 			if v, ok := n.(*ast.CallExpr); ok {
@@ -51,55 +50,3 @@ func runOSExitSearch(pass *analysis.Pass) (interface{}, error) {
 	//}
 	return nil, nil
 }
-
-// todochecker
-//var TODOCheckAnalyzer = &analysis.Analyzer{
-//	Name: "todocheck",
-//	Doc:  "check for todo comments",
-//	Run:  runTODOSearch,
-//}
-//
-//func runTODOSearch(pass *analysis.Pass) (interface{}, error) {
-//	flag.Parse()
-//	fset := token.NewFileSet()
-//	log.Println(fset)
-//	// TODO todo comment 1
-//	log.Println("RUN TODO CHECKER")
-//	for _, file := range pass.Files {
-//		//log.Println("AST file is :", file.Name.Name)
-//		ast.Inspect(file, func(n ast.Node) bool {
-//			// проверяем, что лежащий в узле тип -- это комментарий.
-//			if v, ok := n.(*ast.Comment); ok {
-//				log.Println("runTODOSearch: found COMMENT", v.Text)
-//				if strings.HasPrefix(v.Text, "// TODO") {
-//					//log.Println("runTODOSearch: found TODO")
-//					pass.Reportf(v.Pos(), "TODO comment Reportf: %s", v.Text)
-//				}
-//			}
-//			return true
-//		})
-//	}
-//	//}
-//	return nil, nil
-//}
-//
-//// filesTreeGoFiles -- функция формирования среза с названиями go-файлов в директории.
-//func filesTreeGoFiles(d string) ([]string, error) {
-//	var s []string
-//	err := filepath.Walk(d,
-//		func(path string, info os.FileInfo, err error) error {
-//			if err != nil {
-//				return err
-//			}
-//			//fmt.Println(path)
-//			if !info.IsDir() && filepath.Ext(info.Name()) == ".go" {
-//				s = append(s, path)
-//			}
-//			return nil
-//		})
-//	if err != nil {
-//		log.Println(err)
-//		return nil, err
-//	}
-//	return s, nil
-//}

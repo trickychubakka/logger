@@ -104,3 +104,36 @@ func Test_initConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestIsValidIP(t *testing.T) {
+	type args struct {
+		ip string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Positive Test IsValidIP",
+			args: args{
+				ip: "10.10.10.10",
+			},
+			want: true,
+		},
+		{
+			name: "Negative Test IsValidIP",
+			args: args{
+				ip: "1011.10111.10.10",
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsValidIP(tt.args.ip); got != tt.want {
+				t.Errorf("IsValidIP() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

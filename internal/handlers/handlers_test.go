@@ -135,8 +135,8 @@ func TestMetricsHandler(t *testing.T) {
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
-			defer tt.args.w.Result().Body.Close()
 			assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
+			_ = tt.args.w.Result().Body.Close()
 		})
 	}
 }
@@ -283,10 +283,7 @@ func TestGetMetric(t *testing.T) {
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
 			//defer res.Body.Close()
-			defer tt.args.w.Result().Body.Close()
-			//assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
-			//require.NoError(t, err)
-
+			_ = tt.args.w.Result().Body.Close()
 		})
 	}
 }
@@ -365,9 +362,7 @@ func TestGetAllMetrics(t *testing.T) {
 			res := c.Writer
 			assert.Equal(t, tt.want.code, res.Status())
 			// получаем и проверяем тело запроса
-			defer tt.args.w.Result().Body.Close()
-			//assert.Equal(t, tt.want.contentType, res.Header().Get("Content-Type"))
-			//require.NoError(t, err)
+			_ = tt.args.w.Result().Body.Close()
 		})
 	}
 }

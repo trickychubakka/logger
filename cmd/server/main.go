@@ -1,4 +1,5 @@
 // Logger сервер приема и хранения метрик.
+
 package main
 
 import (
@@ -26,6 +27,8 @@ import (
 
 // Для возможности использования Zap.
 var sugar zap.SugaredLogger
+
+var buildVersion, buildDate, buildCommit string
 
 // task функция дампа метрик на диск раз в interval секунд.
 func task(ctx context.Context, interval int, store handlers.Storager, conf *initconf.Config) {
@@ -92,6 +95,8 @@ func main() {
 	// Изменение режима работы GIN.
 	//gin.SetMode(gin.ReleaseMode)
 
+	internal.PrintStartMessage(buildVersion, buildDate, buildCommit)
+
 	var ctx, ctxDUMP context.Context
 	var cancel, cancelDUMP context.CancelFunc
 	var conf initconf.Config
@@ -128,7 +133,6 @@ func main() {
 			}
 		}
 		log.Println("SERVER STOPPED.")
-		//os.Exit(1)
 		log.Fatal()
 	}()
 
@@ -169,7 +173,6 @@ func main() {
 	router.Use(logging.WithLogging(&sugar))
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress".
 	router.Use(compress.GzipRequestHandle(ctx, &conf))
-	//router.Use(gin.Recovery())
 	if conf.DatabaseDSN == "" {
 		router.Use(internal.SyncDumpUpdate(ctx, store, &conf))
 	}
