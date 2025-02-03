@@ -872,6 +872,7 @@ func ExampleGetMetricJSON_statusNotFound() {
 	conf := &initconf.Config{
 		Key: "superkey",
 	}
+
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest(http.MethodPost, "/value/", bytes.NewReader([]byte(requestedMetric)))
 	c := SetTestGinContext(w, r)
