@@ -1,3 +1,4 @@
+// Package logging -- пакет конфигурирования логирования.
 package logging
 
 import (
@@ -6,7 +7,7 @@ import (
 	"time"
 )
 
-// WithLogging обертка над gin.HandlerFunc для внедрения логирования
+// WithLogging обертка над gin.HandlerFunc для внедрения Zap логирования.
 func WithLogging(sugar *zap.SugaredLogger) gin.HandlerFunc {
 	logFn := func(c *gin.Context) {
 		start := time.Now()
