@@ -45,7 +45,6 @@ func createTestHandlersStor(ctx context.Context) handlers.Storager {
 
 // createDBConfig вспомогательная функция создания временного файла конфигурации
 func createFile(filename string) error {
-	// Создание файла с именем "greeting.txt" и запись в него данных
 	err := os.WriteFile(filename, []byte("Wrong"), 0644)
 	if err != nil {
 		log.Println("createFile:", err)

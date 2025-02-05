@@ -66,7 +66,7 @@ func removeConfigFile(filename string) error {
 	}
 	err = os.Remove(filepath.Join(filepath.Dir(appfile), filename))
 	if err != nil {
-		log.Println("createConfigFile: os.WriteFile error", err)
+		log.Println("removeConfigFile: os.Remove error", err)
 		return err
 	}
 	return nil

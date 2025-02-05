@@ -13,6 +13,7 @@ import (
 	"logger/cmd/server/initconf"
 	"logger/internal"
 	"logger/internal/compress"
+	"logger/internal/encryption"
 	"logger/internal/handlers"
 	"logger/internal/logging"
 	"logger/internal/storage/memstorage"
@@ -171,6 +172,9 @@ func main() {
 	// GIN init.
 	router := gin.Default()
 	router.Use(logging.WithLogging(&sugar))
+	if conf.PathToPrivateKey != "" {
+		router.Use(encryption.DecryptRequestHandler(ctx, conf.PrivateKey))
+	}
 	router.Use(gzip.Gzip(gzip.DefaultCompression)) //-- standard GIN compress "github.com/gin-contrib/compress".
 	router.Use(compress.GzipRequestHandle(ctx, &conf))
 	if conf.DatabaseDSN == "" {

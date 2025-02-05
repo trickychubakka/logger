@@ -3,8 +3,10 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"logger/conf"
+	"logger/internal/encryption"
 	"net"
 	"net/url"
 	"os"
@@ -29,6 +31,7 @@ func initConfig(conf *conf.AgentConfig) error {
 		LogFileFlag        string
 		key                string
 		RateLimitFlag      string
+		//PathToPublicKey    string
 	)
 
 	// Парсинг параметров командной строки.
@@ -43,6 +46,8 @@ func initConfig(conf *conf.AgentConfig) error {
 		//flag.StringVar(&key, "k", "superkey", "key")
 		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
 		flag.BoolVar(&conf.PProfHTTPEnabled, "t", false, "Flag for enabling pprof web server. Default false.")
+		flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
+		//flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
 
 		flag.Parse()
 	}
@@ -118,6 +123,21 @@ func initConfig(conf *conf.AgentConfig) error {
 		return err
 	}
 
-	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s, RateLimit id %d \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile, conf.RateLimit)
+	// Если CRYPTO_KEY определена -- переопределяем conf.PathToPrivateKey ее значением.
+	if envPathToPublicKey := os.Getenv("CRYPTO_KEY"); envPathToPublicKey != "" {
+		log.Println("env var CRYPTO_KEY defined, use CRYPTO_KEY value", envPathToPublicKey)
+		conf.PathToPublicKey = envPathToPublicKey
+	}
+
+	if conf.PathToPublicKey != "" {
+		publicKey, err := encryption.ReadPublicKeyFile(conf.PathToPublicKey)
+		if err != nil {
+			log.Println("InitConfig: Error reading public key file", err)
+			return fmt.Errorf("%s %v", "Error reading public key file", err)
+		}
+		conf.PublicKey = publicKey
+	}
+
+	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s, RateLimit is %d, PathToPublicKey is %s \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile, conf.RateLimit, conf.PathToPublicKey)
 	return nil
 }

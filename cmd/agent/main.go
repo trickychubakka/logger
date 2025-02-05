@@ -42,6 +42,7 @@ func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Me
 			return nil
 		default:
 			if counter == config.PollInterval {
+				//log.Println("MetricsPolling goroutine polling")
 				m.Lock()
 				if err := internal.MetricsPolling(myMetrics); err != nil {
 					log.Println("error in metricsPolling :", err)

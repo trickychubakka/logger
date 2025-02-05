@@ -14,6 +14,7 @@ import (
 	"io"
 	"log"
 	"logger/conf"
+	"logger/internal/encryption"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -127,7 +128,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		}
 
 		rawBody := buf.Bytes()
-		body = bytes.NewReader(rawBody)
+		//body = bytes.NewReader(rawBody)
 		// Считаем hash256 body ПОСЛЕ gzip-упаковки.
 		hash, keyBool = hashBody(rawBody, config)
 		log.Println("hash is:", hash, "keyBool is :", keyBool)
@@ -135,6 +136,21 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			log.Println("SendRequest. Error hashing body:", err)
 		}
 		log.Printf("HashSHA256 is : %x", hash)
+
+		// Шифруем RSA только если config.PathToPublicKey не пустой. Иначе трафик между агентом и сервером не шифруется.
+		// Внимание! Настройка на сервере PathToPrivateKey должна соответствовать config.PathToPublicKey агента --
+		// для отключения шифрования должна быть пустой.
+		// Добавка 040225 RSA START
+		if config.PathToPublicKey != "" {
+			encryptedBody, err1 := encryption.EncryptData(rawBody, config.PublicKey)
+			if err1 != nil {
+				log.Println("SendRequest. Error encrypting body:", err)
+			}
+			body = bytes.NewReader(encryptedBody)
+		} else {
+			body = bytes.NewReader(rawBody)
+		}
+		// Добавка 040225 RSA END
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, body)

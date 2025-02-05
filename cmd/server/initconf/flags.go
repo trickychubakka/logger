@@ -2,11 +2,13 @@
 package initconf
 
 import (
+	"crypto/rsa"
 	"flag"
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
 	"logger/conf"
+	"logger/internal/encryption"
 	"net"
 	"net/url"
 	"os"
@@ -16,39 +18,25 @@ import (
 
 // Config объект конфигурации logger сервера метрик.
 type Config struct {
-	RunAddr             string // Address and port to run server.
-	Logfile             string // Server log file.
-	StoreMetricInterval int    // Store metrics dump to disk interval in sec.
-	FileStoragePath     string // File to save metrics to disk. For MemStorage type only.
-	Restore             bool   // Restore metrics dump with server start. For MemStorage type only.
-	DatabaseDSN         string // DatabaseDSN
-	UseDBConfig         bool   // Use dbconfig/config yaml file (conf/dbconfig.yaml).
-	Key                 string // Key for HMAC.
-	PProfHTTPEnabled    bool   // Start PProfHTTP server.
-	TestDBMode          bool   // Turn On test DB mode. For DB methods unit testing.
-	TestMode            bool   // Turn On test mode. For unit testing.
+	RunAddr             string          // Address and port to run server.
+	Logfile             string          // Server log file.
+	StoreMetricInterval int             // Store metrics dump to disk interval in sec.
+	FileStoragePath     string          // File to save metrics to disk. For MemStorage type only.
+	Restore             bool            // Restore metrics dump with server start. For MemStorage type only.
+	DatabaseDSN         string          // DatabaseDSN
+	UseDBConfig         bool            // Use dbconfig/config yaml file (conf/dbconfig.yaml).
+	Key                 string          // Key for HMAC.
+	PProfHTTPEnabled    bool            // Start PProfHTTP server.
+	TestDBMode          bool            // Turn On test DB mode. For DB methods unit testing.
+	TestMode            bool            // Turn On test mode. For unit testing.
+	PathToPrivateKey    string          // Path to private key.
+	PrivateKey          *rsa.PrivateKey // RSA private key.
 }
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом.
 func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
 	return res != nil
-}
-
-// PrintStartMessage функция вывода значений buildVersion, buildDate, buildCommit при старте.
-// Переменные buildVersion, buildDate, buildCommit объявлены в main.go
-// Значения задаются флагами линковщика, определенными через -X при старте. Примеры:
-//
-//	$ go run -ldflags "-X main.buildVersion=v0.19.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=ITER19_PR1" ./main.go
-//	$ go build -ldflags "-X main.buildVersion=v0.19.1 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')' -X main.buildCommit=ITER19_PR1" -o agent
-func PrintStartMessage(buildVersion, buildDate, buildCommit string) {
-	var printOptions = map[string]string{"version": buildVersion, "date": buildDate, "commit": buildCommit}
-	for k, option := range printOptions {
-		if option == "" {
-			printOptions[k] = "N/A"
-		}
-		log.Printf("Build %s: %s", k, printOptions[k])
-	}
 }
 
 // FlagTest флаг режима тестирования для отключения парсинга командной строки при тестировании.
@@ -85,6 +73,8 @@ func readDBConfig(configName string, configPath string) (string, error) {
 // Конфигурируемые параметры определяется через параметры запуска командной строки либо через переменные окружения.
 // Переменные окружения имеют приоритет перед параметрами командной строки.
 func InitConfig(conf *Config) error {
+	var envGenerateRSAKeys bool
+	var err error
 	log.Println("InitConfig, SUFFIX =", suffix)
 	if !FlagTest {
 		log.Println("start parsing flags")
@@ -93,11 +83,16 @@ func InitConfig(conf *Config) error {
 		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 10 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
-		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
-		//flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		//flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
 		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
 		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
-		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file (conf/dbconfig.yaml). Default false.")
+		flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "./id_rsa", "Path to private key. Default is ./id_rsa")
+		//flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "", "Path to private key. Default is ./id_rsa")
+		flag.BoolVar(&envGenerateRSAKeys, "generate-keys", true, "To generation new RSA public and private "+
+			"keys and save them to the same with conf.PathToPrivateKey directory. Default false. "+
+			"Naming: private key filename defined with -generate-keys option, public filename will be `privateKey filename + .pub`")
+		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file +(conf/dbconfig.yaml). Default false.")
 		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
 		flag.Parse()
 	}
@@ -182,9 +177,52 @@ func InitConfig(conf *Config) error {
 	}
 
 	if envKey := os.Getenv("KEY" + suffix); envKey != "" {
-		log.Println("env var DATABASE_DSN was specified, use DATABASE_DSN =", envKey)
+		log.Println("env var KEY was specified, use KEY")
 		conf.Key = envKey
 		log.Println("Using key")
+	}
+
+	if envPathToPrivateKey := os.Getenv("CRYPTO_KEY" + suffix); envPathToPrivateKey != "" {
+		log.Println("env var CRYPTO_KEY was specified, use CRYPTO_KEY in", envPathToPrivateKey)
+		conf.PathToPrivateKey = envPathToPrivateKey
+		log.Println("Using key", conf.PathToPrivateKey)
+	} else {
+		log.Println("env var CRYPTO_KEY not specified, use command line value from flag.StringVar(&conf.PathToPrivateKey...)", conf.PathToPrivateKey)
+		log.Println("Using key", conf.PathToPrivateKey)
+	}
+
+	// Если CRYPTO_KEY определена -- переопределяем conf.PathToPrivateKey ее значением.
+	if envPathToPrivateKey := os.Getenv("CRYPTO_KEY" + suffix); envPathToPrivateKey != "" {
+		log.Println("env var CRYPTO_KEY defined, use CRYPTO_KEY value", envPathToPrivateKey)
+		conf.PathToPrivateKey = envPathToPrivateKey
+	}
+
+	// Если определена опция generate-keys -- генерируются новые приватный и публичный ключи,
+	// приватный сохраняется в conf.PrivateKey, ключи сохраняются в соответствующие файлы.
+	// Filepath этих файлов определяется через conf.PathToPrivateKey
+	if envGenerateRSAKeys {
+		log.Println("Start to generate new RSA private and public keys")
+		if conf.PathToPrivateKey == "" {
+			log.Println("Error. conf.PathToPrivateKey (-crypto-key option or CRYPTO_KEY env var) must not be empty")
+			return fmt.Errorf("%s", "Error, conf.PathToPrivateKey must not be empty")
+		}
+		privKeyFile := conf.PathToPrivateKey
+		pubKeyFile := privKeyFile + ".pub"
+		conf.PrivateKey, _, err = encryption.GenerateRSAKeyPair(privKeyFile, pubKeyFile)
+		if err != nil {
+			log.Println("Error generating RSA private key:", err)
+			return err
+		}
+	}
+	// Если определена опция или переменная окружения PathToPrivateKey и не включена опция generate-keys,
+	// читаем приватный ключ из этого файла.
+	if conf.PathToPrivateKey != "" && !envGenerateRSAKeys {
+		privateKey, err := encryption.ReadPrivateKeyFile(conf.PathToPrivateKey)
+		if err != nil {
+			log.Println("InitConfig: Error reading private key file", err)
+			return fmt.Errorf("%s %v", "Error reading private key file", err)
+		}
+		conf.PrivateKey = privateKey
 	}
 
 	log.Println("conf.runAddr is URI address, Using URI:", conf.RunAddr)
