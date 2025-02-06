@@ -25,32 +25,32 @@ type DBConfig struct {
 
 // Config конфигурация logger сервера метрик.
 type Config struct {
-	RunAddr             string          `json:"address"`                // Address and port to run server.
-	Logfile             string          `json:"logfile"`                // Server log file.
-	StoreMetricInterval int             `json:"store_interval,int"`     // Store metrics dump to disk interval in sec.
-	FileStoragePath     string          `json:"store_file"`             // File to save metrics to disk. For MemStorage type only.
-	Restore             bool            `json:"restore,bool"`           // Restore metrics dump with server start. For MemStorage type only.
-	DatabaseDSN         string          `json:"database_dsn"`           // DatabaseDSN
-	UseDBConfig         bool            `json:"use_db_config,bool"`     // Use dbconfig/config yaml file (conf/dbconfig.yaml).
-	Key                 string          `json:"key"`                    // Key for HMAC.
-	PProfHTTPEnabled    bool            `json:"pprof_http_enable,bool"` // Start PProfHTTP server.
-	TestDBMode          bool            `json:",bool"`                  // Turn On test DB mode. For DB methods unit testing.
-	TestMode            bool            `json:",bool"`                  // Turn On test mode. For unit testing.
-	PathToPrivateKey    string          `json:"crypto_key"`             // Path to private key.
-	PrivateKey          *rsa.PrivateKey `json:""`                       // RSA private key.
+	RunAddr             string          `json:"address"`           // Address and port to run server.
+	Logfile             string          `json:"logfile"`           // Server log file.
+	StoreMetricInterval int             `json:"store_interval"`    // Store metrics dump to disk interval in sec.
+	FileStoragePath     string          `json:"store_file"`        // File to save metrics to disk. For MemStorage type only.
+	Restore             bool            `json:"restore"`           // Restore metrics dump with server start. For MemStorage type only.
+	DatabaseDSN         string          `json:"database_dsn"`      // DatabaseDSN
+	UseDBConfig         bool            `json:"use_db_config"`     // Use dbconfig/config yaml file (conf/dbconfig.yaml).
+	Key                 string          `json:"key"`               // Key for HMAC.
+	PProfHTTPEnabled    bool            `json:"pprof_http_enable"` // Start PProfHTTP server.
+	TestDBMode          bool            `json:""`                  // Turn On test DB mode. For DB methods unit testing.
+	TestMode            bool            `json:""`                  // Turn On test mode. For unit testing.
+	PathToPrivateKey    string          `json:"crypto_key"`        // Path to private key.
+	PrivateKey          *rsa.PrivateKey `json:""`                  // RSA private key.
 }
 
 // AgentConfig конфигурация logger агента.
 type AgentConfig struct {
-	PollInterval     int            `json:"poll_interval,int"`      // Agent metric polling interval.
-	ReportInterval   int            `json:"report_interval,int"`    // Agent metric report interval.
-	Address          string         `json:"address"`                // Logger server address and port.
-	Logfile          string         `json:"agent_log"`              // Agent log file.
-	Key              string         `json:""`                       // HMAC key.
-	RateLimit        int            `json:"rate_limit,int"`         // Rate limit for agent connections to server.
-	PProfHTTPEnabled bool           `json:"pprof_http_enable,bool"` // Flag for enabling pprof web server.
-	PathToPublicKey  string         `json:"crypto_key"`             // Path to RSA public key file.
-	PublicKey        *rsa.PublicKey `json:""`                       // RSA public key.
+	PollInterval     int            `json:"poll_interval"`     // Agent metric polling interval.
+	ReportInterval   int            `json:"report_interval"`   // Agent metric report interval.
+	Address          string         `json:"address"`           // Logger server address and port.
+	Logfile          string         `json:"agent_log"`         // Agent log file.
+	Key              string         `json:""`                  // HMAC key.
+	RateLimit        int            `json:"rate_limit"`        // Rate limit for agent connections to server.
+	PProfHTTPEnabled bool           `json:"pprof_http_enable"` // Flag for enabling pprof web server.
+	PathToPublicKey  string         `json:"crypto_key"`        // Path to RSA public key file.
+	PublicKey        *rsa.PublicKey `json:""`                  // RSA public key.
 }
 
 // ToJSON конвертация JSON с go-style комментариями в "чистый" JSON для json.Unmarshal.
@@ -81,7 +81,7 @@ func ReadConfig(fileName string, conf any) error {
 		return err
 	}
 	jsn := ToJSON(data)
-	log.Println("ReadConfig. jsn is: ", string(jsn))
+	//log.Println("ReadConfig. jsn is: ", string(jsn))
 	// Если на вход получена конфигурация сервера.
 	if reflect.DeepEqual(reflect.TypeOf(conf), reflect.TypeOf(&serverConf)) {
 		log.Println("reflect.TypeOf(conf) is *Config")
