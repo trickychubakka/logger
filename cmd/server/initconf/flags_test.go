@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"log"
+	"logger/config"
 	"os"
 	"strings"
 	"testing"
@@ -51,7 +52,7 @@ func randomString(length int) string {
 func Test_initConfig(t *testing.T) {
 
 	type args struct {
-		conf                Config
+		conf                config.Config
 		envAddr             string
 		envStoreInterval    string
 		envRestore          string
@@ -71,7 +72,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:    Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
+				conf:    config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
 				envAddr: "localhost:8080",
 			},
 			wantErr: false,
@@ -79,7 +80,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, does not match the pattern address:port",
 			args: args{
-				conf:    Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
+				conf:    config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
 				envAddr: "d45656&&^%kjh",
 			},
 			wantErr: true,
@@ -87,7 +88,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, port is not number",
 			args: args{
-				conf:    Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
+				conf:    config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
 				envAddr: "localhost:wrongPort",
 			},
 			wantErr: true,
@@ -95,7 +96,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong RequestURI",
 			args: args{
-				conf:    Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
+				conf:    config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
 				envAddr: "localhost;:9090",
 			},
 			wantErr: true,
@@ -103,7 +104,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, invalid STORE_INTERVAL variable",
 			args: args{
-				conf:             Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
+				conf:             config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", Restore: true, TestMode: true},
 				envAddr:          "localhost:8080",
 				envStoreInterval: "WrongStoreInterval",
 			},
@@ -112,7 +113,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, invalid RESTORE variable",
 			args: args{
-				conf:             Config{RunAddr: "localhost:8080", FileStoragePath: "dump", TestMode: true},
+				conf:             config.Config{RunAddr: "localhost:8080", FileStoragePath: "dump", TestMode: true},
 				envAddr:          "localhost:8080",
 				envRestore:       "TRUGH",
 				envStoreInterval: "WrongStoreInterval",

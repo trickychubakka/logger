@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/handlers"
 	"logger/internal/storage/memstorage"
 	"net/http"
@@ -194,7 +194,7 @@ func TestSyncDumpUpdate(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		store handlers.Storager
-		conf  *initconf.Config
+		conf  *config.Config
 		w     *httptest.ResponseRecorder
 		r     *http.Request
 	}
@@ -209,7 +209,7 @@ func TestSyncDumpUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestHandlersStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					StoreMetricInterval: 0,
 					FileStoragePath:     "./testDumpFile.dmp",
 				},
@@ -223,7 +223,7 @@ func TestSyncDumpUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestHandlersStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					StoreMetricInterval: 0,
 				},
 				w: httptest.NewRecorder(),

@@ -329,6 +329,6 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *config
 		log.Println("SendMetricsJSONBatch: Error from SendRequest call:", err)
 		return err
 	}
-	defer response.Body.Close()
+	_ = response.Body.Close()
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/storage"
 	"os"
 	"testing"
@@ -30,7 +30,7 @@ func CheckDB() (string, bool) {
 }
 
 // initTestDB -- функция инициализации нового объекта PgStorage и тестовых таблиц.
-func initTestDB(conf *initconf.Config) (PgStorage, error) {
+func initTestDB(conf *config.Config) (PgStorage, error) {
 	pg := PgStorage{}
 	dsn, DBPresent = CheckDB()
 	if !DBPresent {
@@ -86,7 +86,7 @@ func initTestMetrics(pg PgStorage) error {
 
 func TestNew(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 	}
 	tests := []struct {
 		name    string
@@ -97,7 +97,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Positive TestNew",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -128,7 +128,7 @@ func TestNew(t *testing.T) {
 
 func TestPgStorage_Close(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 	}
 	tests := []struct {
 		name    string
@@ -139,7 +139,7 @@ func TestPgStorage_Close(t *testing.T) {
 		{
 			name: "Positive TestClose",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -168,7 +168,7 @@ func TestPgStorage_Close(t *testing.T) {
 
 func TestPgStorage_GetAllMetrics(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 	}
 	tests := []struct {
 		name    string
@@ -179,7 +179,7 @@ func TestPgStorage_GetAllMetrics(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_GetAllMetrics",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -208,11 +208,11 @@ func TestPgStorage_GetAllMetrics(t *testing.T) {
 
 func TestPgStorage_GetCounter(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 		key  string
 	}
 
-	pg, err := initTestDB(&initconf.Config{
+	pg, err := initTestDB(&config.Config{
 		TestDBMode:  true,
 		DatabaseDSN: "",
 	})
@@ -234,7 +234,7 @@ func TestPgStorage_GetCounter(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_GetCounter",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -245,7 +245,7 @@ func TestPgStorage_GetCounter(t *testing.T) {
 		{
 			name: "Negative TestPgStorage_GetCounter",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -270,11 +270,11 @@ func TestPgStorage_GetCounter(t *testing.T) {
 
 func TestPgStorage_GetGauge(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 		key  string
 	}
 
-	pg, err := initTestDB(&initconf.Config{
+	pg, err := initTestDB(&config.Config{
 		TestDBMode:  true,
 		DatabaseDSN: "",
 	})
@@ -296,7 +296,7 @@ func TestPgStorage_GetGauge(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_GetCounter",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -307,7 +307,7 @@ func TestPgStorage_GetGauge(t *testing.T) {
 		{
 			name: "Negative TestPgStorage_GetGauge",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -334,12 +334,12 @@ func TestPgStorage_GetGauge(t *testing.T) {
 
 func TestPgStorage_GetValue(t *testing.T) {
 	type args struct {
-		conf *initconf.Config
+		conf *config.Config
 		t    string
 		key  string
 	}
 
-	pg, err := initTestDB(&initconf.Config{
+	pg, err := initTestDB(&config.Config{
 		TestDBMode:  true,
 		DatabaseDSN: "",
 	})
@@ -361,7 +361,7 @@ func TestPgStorage_GetValue(t *testing.T) {
 		{
 			name: "Positive Gauge TestPgStorage_GetValue",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -373,7 +373,7 @@ func TestPgStorage_GetValue(t *testing.T) {
 		{
 			name: "Positive Counter TestPgStorage_GetValue",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -385,7 +385,7 @@ func TestPgStorage_GetValue(t *testing.T) {
 		{
 			name: "Negative TestPgStorage_GetValue",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -397,7 +397,7 @@ func TestPgStorage_GetValue(t *testing.T) {
 		{
 			name: "wrong metric type TestPgStorage_GetValue",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -424,11 +424,11 @@ func TestPgStorage_GetValue(t *testing.T) {
 
 func TestPgStorage_UpdateBatch(t *testing.T) {
 	type args struct {
-		conf    *initconf.Config
+		conf    *config.Config
 		metrics []storage.Metrics
 	}
 
-	pg, err := initTestDB(&initconf.Config{
+	pg, err := initTestDB(&config.Config{
 		TestDBMode:  true,
 		DatabaseDSN: "",
 	})
@@ -447,7 +447,7 @@ func TestPgStorage_UpdateBatch(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_UpdateBatch",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -461,7 +461,7 @@ func TestPgStorage_UpdateBatch(t *testing.T) {
 		{
 			name: "Empty []Metrics TestPgStorage_UpdateBatch",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -485,7 +485,7 @@ func TestPgStorage_UpdateBatch(t *testing.T) {
 
 func TestPgStorage_UpdateCounter(t *testing.T) {
 	type args struct {
-		conf  *initconf.Config
+		conf  *config.Config
 		key   string
 		value int64
 	}
@@ -498,7 +498,7 @@ func TestPgStorage_UpdateCounter(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_UpdateCounter",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},
@@ -537,7 +537,7 @@ func TestPgStorage_UpdateCounter(t *testing.T) {
 
 func TestPgStorage_UpdateGauge(t *testing.T) {
 	type args struct {
-		conf  *initconf.Config
+		conf  *config.Config
 		key   string
 		value float64
 	}
@@ -550,7 +550,7 @@ func TestPgStorage_UpdateGauge(t *testing.T) {
 		{
 			name: "Positive TestPgStorage_UpdateGauge",
 			args: args{
-				conf: &initconf.Config{
+				conf: &config.Config{
 					TestDBMode:  true,
 					DatabaseDSN: "",
 				},

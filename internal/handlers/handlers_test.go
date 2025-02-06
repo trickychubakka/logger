@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"io"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
 	"net/http"
@@ -462,7 +462,7 @@ func ExampleGetAllMetrics_withUseSetTestGinContext() {
 func Test_hashBody(t *testing.T) {
 	body := []byte("Test body")
 	var c *gin.Context
-	config := initconf.Config{
+	config := config.Config{
 		Key: "superkey",
 	}
 	type args struct {
@@ -512,7 +512,7 @@ func TestMetricHandlerBatchUpdate(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		store Storager
-		conf  *initconf.Config
+		conf  *config.Config
 		w     *httptest.ResponseRecorder
 		r     *http.Request
 	}
@@ -533,7 +533,7 @@ func TestMetricHandlerBatchUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -550,7 +550,7 @@ func TestMetricHandlerBatchUpdate(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -585,7 +585,7 @@ func ExampleMetricHandlerBatchUpdate() {
 
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
-	conf := &initconf.Config{
+	conf := &config.Config{
 		Key: "superkey",
 	}
 	w := httptest.NewRecorder()
@@ -607,7 +607,7 @@ func TestMetricHandlerJSON(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		store Storager
-		conf  *initconf.Config
+		conf  *config.Config
 		w     *httptest.ResponseRecorder
 		r     *http.Request
 	}
@@ -628,7 +628,7 @@ func TestMetricHandlerJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -645,7 +645,7 @@ func TestMetricHandlerJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -675,7 +675,7 @@ func ExampleMetricHandlerJSON() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
-	conf := &initconf.Config{
+	conf := &config.Config{
 		Key: "superkey",
 	}
 	w := httptest.NewRecorder()
@@ -697,7 +697,7 @@ func TestGetMetricJSON(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		store Storager
-		conf  *initconf.Config
+		conf  *config.Config
 		w     *httptest.ResponseRecorder
 		r     *http.Request
 	}
@@ -719,7 +719,7 @@ func TestGetMetricJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -736,7 +736,7 @@ func TestGetMetricJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -753,7 +753,7 @@ func TestGetMetricJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -770,7 +770,7 @@ func TestGetMetricJSON(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: createTestStor(context.Background()),
-				conf: &initconf.Config{
+				conf: &config.Config{
 					FileStoragePath: "",
 					Key:             "superkey",
 				},
@@ -800,7 +800,7 @@ func ExampleGetMetricJSON() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
-	conf := &initconf.Config{
+	conf := &config.Config{
 		Key: "superkey",
 	}
 	w := httptest.NewRecorder()
@@ -834,7 +834,7 @@ func ExampleGetMetricJSON_second() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
-	conf := initconf.Config{
+	conf := config.Config{
 		Key: "superkey",
 	}
 	w := httptest.NewRecorder()
@@ -869,7 +869,7 @@ func ExampleGetMetricJSON_statusNotFound() {
 	ctx := context.Background()
 	// Test store:  map[Gauge1:1.1 Gauge2:2.2 Gauge3:3.3] map[Counter1:1 Counter2:2 Counter3:3]
 	store := createTestStor(ctx)
-	conf := &initconf.Config{
+	conf := &config.Config{
 		Key: "superkey",
 	}
 	w := httptest.NewRecorder()

@@ -2,7 +2,6 @@
 package initconf
 
 import (
-	"crypto/rsa"
 	"flag"
 	"fmt"
 	"github.com/spf13/viper"
@@ -17,21 +16,21 @@ import (
 )
 
 // Config объект конфигурации logger сервера метрик.
-type Config struct {
-	RunAddr             string          // Address and port to run server.
-	Logfile             string          // Server log file.
-	StoreMetricInterval int             // Store metrics dump to disk interval in sec.
-	FileStoragePath     string          // File to save metrics to disk. For MemStorage type only.
-	Restore             bool            // Restore metrics dump with server start. For MemStorage type only.
-	DatabaseDSN         string          // DatabaseDSN
-	UseDBConfig         bool            // Use dbconfig/config yaml file (conf/dbconfig.yaml).
-	Key                 string          // Key for HMAC.
-	PProfHTTPEnabled    bool            // Start PProfHTTP server.
-	TestDBMode          bool            // Turn On test DB mode. For DB methods unit testing.
-	TestMode            bool            // Turn On test mode. For unit testing.
-	PathToPrivateKey    string          // Path to private key.
-	PrivateKey          *rsa.PrivateKey // RSA private key.
-}
+//type Config struct {
+//	RunAddr             string          // Address and port to run server.
+//	Logfile             string          // Server log file.
+//	StoreMetricInterval int             // Store metrics dump to disk interval in sec.
+//	FileStoragePath     string          // File to save metrics to disk. For MemStorage type only.
+//	Restore             bool            // Restore metrics dump with server start. For MemStorage type only.
+//	DatabaseDSN         string          // DatabaseDSN
+//	UseDBConfig         bool            // Use dbconfig/config yaml file (conf/dbconfig.yaml).
+//	Key                 string          // Key for HMAC.
+//	PProfHTTPEnabled    bool            // Start PProfHTTP server.
+//	TestDBMode          bool            // Turn On test DB mode. For DB methods unit testing.
+//	TestMode            bool            // Turn On test mode. For unit testing.
+//	PathToPrivateKey    string          // Path to private key.
+//	PrivateKey          *rsa.PrivateKey // RSA private key.
+//}
 
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом.
 func IsValidIP(ip string) bool {

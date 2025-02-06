@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/handlers"
 	"logger/internal/storage/memstorage"
 	"reflect"
@@ -14,7 +14,7 @@ func Test_storeInit(t *testing.T) {
 	type args struct {
 		ctx   context.Context
 		store handlers.Storager
-		conf  *initconf.Config
+		conf  *config.Config
 	}
 	var store handlers.Storager
 	tests := []struct {
@@ -28,7 +28,7 @@ func Test_storeInit(t *testing.T) {
 			args: args{
 				ctx:   context.Background(),
 				store: store,
-				conf: &initconf.Config{
+				conf: &config.Config{
 					DatabaseDSN: "",
 					Restore:     false,
 				},

@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -54,7 +54,7 @@ func hashBody(body []byte, key string) []byte {
 
 func TestGzipRequestHandle(t *testing.T) {
 	type args struct {
-		config *initconf.Config
+		config *config.Config
 		body   []byte
 		w      *httptest.ResponseRecorder
 		r      *http.Request
@@ -76,7 +76,7 @@ func TestGzipRequestHandle(t *testing.T) {
 			name: "Positive test func TestGzipRequestHandle(t *testing.T)",
 			args: args{
 				//body: []byte("test body"),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "testkey",
 				},
 				w:    httptest.NewRecorder(),
@@ -92,7 +92,7 @@ func TestGzipRequestHandle(t *testing.T) {
 			name: "checkSign error TestGzipRequestHandle(t *testing.T)",
 			args: args{
 				body: []byte("test body"),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "testkey",
 				},
 				w:    httptest.NewRecorder(),
@@ -108,7 +108,7 @@ func TestGzipRequestHandle(t *testing.T) {
 			name: "gzip error TestGzipRequestHandle(t *testing.T)",
 			args: args{
 				body: []byte("test body"),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "testkey",
 				},
 				w:    httptest.NewRecorder(),
@@ -124,7 +124,7 @@ func TestGzipRequestHandle(t *testing.T) {
 			name: "gzip error with non-HASH TestGzipRequestHandle(t *testing.T)",
 			args: args{
 				body: []byte("test body"),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "",
 				},
 				w: httptest.NewRecorder(),
@@ -155,7 +155,7 @@ func Test_checkSign(t *testing.T) {
 	type args struct {
 		body   []byte
 		hash   string
-		config *initconf.Config
+		config *config.Config
 		//key    string
 	}
 	tests := []struct {
@@ -169,7 +169,7 @@ func Test_checkSign(t *testing.T) {
 			args: args{
 				body: []byte("test body"),
 				hash: hex.EncodeToString(hashBody([]byte("test body"), "testkey")),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "testkey",
 				},
 			},
@@ -181,7 +181,7 @@ func Test_checkSign(t *testing.T) {
 				body: []byte("test body"),
 				//key:  "wrongKey",
 				hash: hex.EncodeToString(hashBody([]byte("test body"), "testkey")),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "",
 				},
 			},
@@ -194,7 +194,7 @@ func Test_checkSign(t *testing.T) {
 				body: []byte("test body"),
 				//key:  "wrongKey",
 				hash: "WrongHash",
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "testkey",
 				},
 			},
@@ -206,7 +206,7 @@ func Test_checkSign(t *testing.T) {
 				body: []byte("test body"),
 				//key:  "wrongKey",
 				hash: hex.EncodeToString(hashBody([]byte("test body"), "testkey")),
-				config: &initconf.Config{
+				config: &config.Config{
 					Key: "wrongKey",
 				},
 			},
