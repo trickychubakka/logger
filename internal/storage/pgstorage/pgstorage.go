@@ -17,8 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
-	"logger/cmd/server/initconf"
-	//"logger/conf"
+	"logger/config"
 	"logger/internal/database"
 	"logger/internal/storage"
 	"time"
@@ -82,7 +81,7 @@ func pgExecWrapper(f func(ctx context.Context, query string, args ...any) (sql.R
 }
 
 // New -- конструктор объекта хранилища PgStorage.
-func New(ctx context.Context, conf *initconf.Config) (PgStorage, error) {
+func New(ctx context.Context, conf *config.Config) (PgStorage, error) {
 	pg := database.Postgresql{}
 	var testDBPrefix string
 

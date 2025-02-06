@@ -5,7 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"logger/conf"
+	"logger/config"
 	"logger/internal/encryption"
 	"net"
 	"net/url"
@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-var config conf.AgentConfig
-
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом.
 func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
@@ -23,7 +21,7 @@ func IsValidIP(ip string) bool {
 }
 
 // initConfig функция инициализации конфигурации агента с использованием параметров командной строки.
-func initConfig(conf *conf.AgentConfig) error {
+func initConfig(conf *config.AgentConfig) error {
 	var (
 		ReportIntervalFlag string
 		PollIntervalFlag   string

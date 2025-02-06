@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"logger/conf"
+	"logger/config"
 	"logger/internal"
 	"net/http"
 	_ "net/http/pprof"
@@ -16,6 +16,11 @@ import (
 	"sync"
 	"syscall"
 	"time"
+)
+
+const (
+	//configFile = `C:\JetBrains\GolandProjects\logger\internal\config\agent.json`
+	configFile = `./config/agent.json`
 )
 
 // Переменные для вывода информации при старте приложения.
@@ -32,7 +37,7 @@ const (
 var srv *http.Server
 
 // metricsPolling функция сбора метрик.
-func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *config.AgentConfig) error {
 	log.Println("start metricsPolling goroutine")
 	counter := 1
 	for {
@@ -58,7 +63,7 @@ func metricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Me
 }
 
 // gopsMetricsPolling функция сбора метрик, собранных через gopsutil.
-func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *config.AgentConfig) error {
 	log.Println("start gopsMetricsPolling goroutine")
 	counter := 1
 	for {
@@ -84,7 +89,7 @@ func gopsMetricsPolling(ctx context.Context, m *sync.RWMutex, myMetrics *interna
 }
 
 // metricReport функция отсылки метрик на logger сервер.
-func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *conf.AgentConfig) error {
+func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.MetricsStorage, config *config.AgentConfig) error {
 	log.Println("start metricsReport goroutine")
 	counter := 1
 	errorCount := 0
@@ -138,7 +143,7 @@ func startHTTPServer(wg *sync.WaitGroup) *http.Server {
 }
 
 // Run функция запуска горутин polling-а метрик и их отсылки на logger сервер.
-func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
+func run(myMetrics internal.MetricsStorage, config *config.AgentConfig) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var m sync.RWMutex
 	var wg sync.WaitGroup
@@ -197,17 +202,26 @@ func run(myMetrics internal.MetricsStorage, config *conf.AgentConfig) {
 	log.Fatal()
 }
 
+var err error
+
 func main() {
+	var conf config.AgentConfig
 
 	internal.PrintStartMessage(buildVersion, buildDate, buildCommit)
 
-	if err := initConfig(&config); err != nil {
+	err = config.ReadConfig(configFile, &conf)
+	if err != nil {
+		log.Println("Config pre-initialization from config file", configFile, " error :", err)
+	}
+	log.Println("Pre-initialized from agent.json config is :", fmt.Sprintf("%+v\n", conf))
+
+	if err = initConfig(&conf); err != nil {
 		log.Println("AGENT Panic from initConfig", err)
 		panic(err)
 	}
 
-	if config.Logfile != "" {
-		file, err := os.OpenFile(config.Logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if conf.Logfile != "" {
+		file, err := os.OpenFile(conf.Logfile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 		if err != nil {
 			log.Fatal("Failed to open log file:", err)
 		}
@@ -220,7 +234,7 @@ func main() {
 		}(file)
 	}
 
-	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", config.Address, config.PollInterval, config.ReportInterval, config.Logfile)
+	fmt.Printf("\nAddress is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile)
 
 	myMetrics := internal.NewMetricsStorageObj()
 
@@ -231,9 +245,9 @@ func main() {
 			log.Println("recovered from panic in main")
 		}
 		log.Println("Start run after recovering")
-		run(myMetrics, &config)
+		run(myMetrics, &conf)
 	}()
 
 	log.Println("Start run")
-	run(myMetrics, &config)
+	run(myMetrics, &conf)
 }

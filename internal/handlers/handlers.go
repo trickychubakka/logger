@@ -13,7 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
-	"logger/cmd/server/initconf"
+	//"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/database"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
@@ -73,7 +74,7 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 }
 
 // hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context.
-func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
+func hashBody(body []byte, config *config.Config, c *gin.Context) error {
 	if config.Key == "" {
 		log.Println("config.Key is empty")
 		return nil
@@ -133,7 +134,7 @@ func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 
 // MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body.
 // Обрабатывает POST запросы на /update/ c JSON-ом метрики в body запроса.
-func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+func MetricHandlerJSON(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("MetricHandlerJSON START")
 		jsn, err := io.ReadAll(c.Request.Body)
@@ -206,7 +207,7 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 
 // MetricHandlerBatchUpdate -- Gin handler обработки batch запроса по изменениям batch-а метрик через []Metrics в Body.
 // Обрабатывает POST запросы на /updates c JSON-ом с несколькими метраками в body запроса.
-func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -321,7 +322,7 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 
 // GetMetricJSON Gin handler получения значения метрики через POST запрос с JSON с параметрами запрошенной метрики.
 // Обрабатывает POST запросы на /value/.
-func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+func GetMetricJSON(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 

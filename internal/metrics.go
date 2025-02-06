@@ -13,7 +13,7 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"io"
 	"log"
-	"logger/conf"
+	"logger/config"
 	"logger/internal/encryption"
 	"math/rand"
 	"net/http"
@@ -89,7 +89,7 @@ func GopsMetricPolling(metrics *MetricsStorage) error {
 // hashBody функция подписи body отсылаемого сообщения.
 // Если ключ задан (не равен "" в AgentConfig) -- возвращаем hash, true.
 // Если ключ не задан -- возвращаем nil, false.
-func hashBody(body []byte, config *conf.AgentConfig) ([]byte, bool) {
+func hashBody(body []byte, config *config.AgentConfig) ([]byte, bool) {
 	if config.Key == "" {
 		log.Println("config.Key is empty")
 		return nil, false
@@ -102,7 +102,7 @@ func hashBody(body []byte, config *conf.AgentConfig) ([]byte, bool) {
 }
 
 // SendRequest функция отсылки HTTP запроса к logger серверу.
-func SendRequest(client *http.Client, url string, body io.Reader, contentType string, config *conf.AgentConfig) (*http.Response, error) {
+func SendRequest(client *http.Client, url string, body io.Reader, contentType string, config *config.AgentConfig) (*http.Response, error) {
 	var hash []byte
 	var keyBool bool
 
@@ -202,7 +202,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 }
 
 // SendMetrics отсылка метрик на logger сервер.
-func SendMetrics(metrics *MetricsStorage, c string, config *conf.AgentConfig) error {
+func SendMetrics(metrics *MetricsStorage, c string, config *config.AgentConfig) error {
 	count := 0
 
 	// Цикл для отсылки метрик типа gaugeMap
@@ -247,7 +247,7 @@ type Metrics struct {
 }
 
 // SendMetricsJSON отправка метрик на logger сервер в JSON в body, содержащим сериализованный объект метрики.
-func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
+func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *config.AgentConfig) error {
 	count := 0
 	// Цикл для отсылки метрик типа gaugeMap.
 	for m := range metrics.gaugeMap {
@@ -313,7 +313,7 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 
 // SendMetricsJSONBatch отсылка набора метрик на logger сервер.
 // Метрики имеют вид сериализованного массива объектов Metrics.
-func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
+func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *config.AgentConfig) error {
 	tmpMetrics, err := MemstorageToMetrics(*metrics)
 	if err != nil {
 		log.Println("Error in SendMetricsJSONBatch:", err)

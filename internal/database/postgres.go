@@ -7,20 +7,20 @@ import (
 	"database/sql"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"log"
-	"logger/conf"
+	"logger/config"
 	"regexp"
 	"strings"
 )
 
 // Postgresql объект конфигурации Postgres соединения.
 type Postgresql struct {
-	Cfg *conf.Config
+	Cfg *config.DBConfig
 	db  *sql.DB
 }
 
 // Connect -- реализация метода Connect для Postgres БД.
 func (p *Postgresql) Connect(connStr string) error {
-	p.Cfg = &conf.Config{}
+	p.Cfg = &config.DBConfig{}
 	// Парсинг connStr формата postgres://user:password@host:port/dbname?sslmode=disable
 	zp := regexp.MustCompile(`(://)|/|@|:|\?`)
 	connStrMap := zp.Split(connStr, -1)

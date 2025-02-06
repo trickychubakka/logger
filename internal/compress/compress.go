@@ -12,7 +12,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
-	"logger/cmd/server/initconf"
+	//"logger/cmd/server/initconf"
+	"logger/config"
 	"net/http"
 )
 
@@ -47,7 +48,7 @@ func (g *gzipWriter) WriteString(s string) (int, error) {
 }
 
 // checkSign функция проверки подписи.
-func checkSign(body []byte, hash string, config *initconf.Config) (bool, error) {
+func checkSign(body []byte, hash string, config *config.Config) (bool, error) {
 	if config.Key == "" {
 		return false, nil
 	}
@@ -76,7 +77,7 @@ func checkSign(body []byte, hash string, config *initconf.Config) (bool, error) 
 }
 
 // GzipRequestHandle хэндлер распаковки body входящего Request запроса.
-func GzipRequestHandle(_ context.Context, config *initconf.Config) gin.HandlerFunc {
+func GzipRequestHandle(_ context.Context, config *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var body []byte
 		var newBody *bytes.Reader

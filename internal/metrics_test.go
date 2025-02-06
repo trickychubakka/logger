@@ -2,7 +2,7 @@ package internal
 
 import (
 	"github.com/stretchr/testify/assert"
-	"logger/conf"
+	"logger/config"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -87,7 +87,7 @@ func TestSendMetrics(t *testing.T) {
 	type args struct {
 		metrics *MetricsStorage
 		c       string
-		config  *conf.AgentConfig
+		config  *config.AgentConfig
 	}
 	metrics := MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -135,7 +135,7 @@ func TestSendMetricsJSONBatch(t *testing.T) {
 	type args struct {
 		metrics *MetricsStorage
 		c       string
-		config  *conf.AgentConfig
+		config  *config.AgentConfig
 	}
 	metrics := MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -156,7 +156,7 @@ func TestSendMetricsJSONBatch(t *testing.T) {
 			args: args{
 				metrics: &metrics,
 				c:       "/updates",
-				config: &conf.AgentConfig{
+				config: &config.AgentConfig{
 					Key: "testkey",
 				},
 			},
@@ -189,7 +189,7 @@ func TestSendMetricsJSON(t *testing.T) {
 	type args struct {
 		metrics *MetricsStorage
 		c       string
-		config  *conf.AgentConfig
+		config  *config.AgentConfig
 	}
 	metrics := MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -208,7 +208,7 @@ func TestSendMetricsJSON(t *testing.T) {
 			args: args{
 				metrics: &metrics,
 				c:       "/updates",
-				config: &conf.AgentConfig{
+				config: &config.AgentConfig{
 					Key: "testkey",
 				},
 			},
@@ -241,7 +241,7 @@ func TestSendRequest(t *testing.T) {
 	type args struct {
 		client *http.Client
 		url    string
-		config *conf.AgentConfig
+		config *config.AgentConfig
 	}
 	type want struct {
 		code        int
@@ -293,10 +293,10 @@ func TestSendRequest(t *testing.T) {
 
 func Test_hashBody(t *testing.T) {
 	body := []byte("Test body")
-	config := conf.AgentConfig{
+	conf := config.AgentConfig{
 		Key: "superkey",
 	}
-	if _, ok := hashBody(body, &config); !ok {
+	if _, ok := hashBody(body, &conf); !ok {
 		t.Errorf("hashBody() error = %v", ok)
 	}
 }

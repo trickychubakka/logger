@@ -1,7 +1,7 @@
 package main
 
 import (
-	"logger/conf"
+	"logger/config"
 	"os"
 	"testing"
 )
@@ -26,7 +26,7 @@ func setEnv(envAddr, envPollInterval, envReportInterval string) error {
 func Test_initConfig(t *testing.T) {
 
 	type args struct {
-		conf              conf.AgentConfig
+		conf              config.AgentConfig
 		envAddr           string
 		envPollInterval   string
 		envReportInterval string
@@ -41,7 +41,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Positive Test initConfig",
 			args: args{
-				conf:              conf.AgentConfig{PollInterval: 10, ReportInterval: 2, Address: "localhost:8080"},
+				conf:              config.AgentConfig{PollInterval: 10, ReportInterval: 2, Address: "localhost:8080"},
 				envAddr:           "localhost:8080",
 				envPollInterval:   "2",
 				envReportInterval: "10",
@@ -52,7 +52,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong URL",
 			args: args{
-				conf:              conf.AgentConfig{PollInterval: 10, ReportInterval: 2, Address: "localhost:8080"},
+				conf:              config.AgentConfig{PollInterval: 10, ReportInterval: 2, Address: "localhost:8080"},
 				envAddr:           "d45656&&^%kjh",
 				envPollInterval:   "2",
 				envReportInterval: "10",
@@ -62,7 +62,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong reportInterval",
 			args: args{
-				conf:              conf.AgentConfig{},
+				conf:              config.AgentConfig{},
 				envAddr:           "localhost:8080",
 				envPollInterval:   "2",
 				envReportInterval: "ere",
@@ -72,7 +72,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, wrong pollingInterval",
 			args: args{
-				conf:              conf.AgentConfig{},
+				conf:              config.AgentConfig{},
 				envAddr:           "localhost:8080",
 				envPollInterval:   "ere",
 				envReportInterval: "10",
@@ -82,7 +82,7 @@ func Test_initConfig(t *testing.T) {
 		{
 			name: "Negative Test initConfig, poll interval must be less than report interval",
 			args: args{
-				conf:              conf.AgentConfig{},
+				conf:              config.AgentConfig{},
 				envAddr:           "localhost:7777",
 				envPollInterval:   "20",
 				envReportInterval: "10",

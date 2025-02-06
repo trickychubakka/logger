@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"log"
-	"logger/conf"
+	"logger/config"
 	"logger/internal/encryption"
 	"net"
 	"net/url"
@@ -47,7 +47,7 @@ var suffix = ""
 
 // readDBConfig -- функция чтения конфигурации dbconfig.yaml по указанному пути.
 func readDBConfig(configName string, configPath string) (string, error) {
-	dbCfg := &conf.Config{}
+	dbCfg := &config.DBConfig{}
 	var connStr string
 	log.Println("flags and DATABASE_DSN env are not defined, trying to find and read dbconfig.yaml")
 	viper.SetConfigName(configName)
@@ -72,7 +72,7 @@ func readDBConfig(configName string, configPath string) (string, error) {
 // InitConfig -- функция инициализации конфигурации logger сервера.
 // Конфигурируемые параметры определяется через параметры запуска командной строки либо через переменные окружения.
 // Переменные окружения имеют приоритет перед параметрами командной строки.
-func InitConfig(conf *Config) error {
+func InitConfig(conf *config.Config) error {
 	var envGenerateRSAKeys bool
 	var err error
 	log.Println("InitConfig, SUFFIX =", suffix)
@@ -97,7 +97,7 @@ func InitConfig(conf *Config) error {
 		flag.Parse()
 	}
 
-	log.Println("Config before env var processing:", conf)
+	log.Println("Config after flag but before env var processing:", fmt.Sprintf("%+v\n", conf))
 
 	// Пытаемся прочитать переменную окружения ADDRESS. Переменные окружения имеют приоритет перед флагами,
 	// поэтому переопределяют опции командной строки в случае, если соответствующая переменная определена в env.

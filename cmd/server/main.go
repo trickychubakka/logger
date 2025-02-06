@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal"
 	"logger/internal/compress"
 	"logger/internal/encryption"
@@ -26,13 +27,18 @@ import (
 	"time"
 )
 
+const (
+	//configFile = `C:\JetBrains\GolandProjects\logger\internal\config\server.json`
+	configFile = `./config/server.json`
+)
+
 // Для возможности использования Zap.
 var sugar zap.SugaredLogger
 
 var buildVersion, buildDate, buildCommit string
 
 // task функция дампа метрик на диск раз в interval секунд.
-func task(ctx context.Context, interval int, store handlers.Storager, conf *initconf.Config) {
+func task(ctx context.Context, interval int, store handlers.Storager, conf *config.Config) {
 	// запускаем бесконечный цикл
 	for {
 		select {
@@ -56,7 +62,7 @@ func task(ctx context.Context, interval int, store handlers.Storager, conf *init
 // 1. создан memstorage восстановлением из dump-а
 // 2. при ошибке в п.1 -- создан новый memstorage
 // 3. если определена переменная DatabaseDSN -- создан store типа pgstorage
-func storeInit(ctx context.Context, store handlers.Storager, conf *initconf.Config) (handlers.Storager, error) {
+func storeInit(ctx context.Context, store handlers.Storager, conf *config.Config) (handlers.Storager, error) {
 	var err error
 	if conf.DatabaseDSN == "" {
 		// если определена опция восстановления store из дампа.
@@ -100,19 +106,25 @@ func main() {
 
 	var ctx, ctxDUMP context.Context
 	var cancel, cancelDUMP context.CancelFunc
-	var conf initconf.Config
+	var conf config.Config
 	var store handlers.Storager
 
 	// Parent context.
 	ctx, cancel = context.WithCancel(context.Background())
 	defer cancel()
 
+	err = config.ReadConfig(configFile, &conf)
+	if err != nil {
+		log.Println("Config pre-initialization from config file", configFile, " error :", err)
+	}
+	log.Println("Pre-initialized from server.json config is :", fmt.Sprintf("%+v\n", conf))
+
 	// Config initialization.
-	if err := initconf.InitConfig(&conf); err != nil {
+	if err = initconf.InitConfig(&conf); err != nil {
 		log.Println("Panic in initConfig")
 		panic(err)
 	}
-	log.Println("initconf is:", conf)
+	log.Println("initconf is:", fmt.Sprintf("%+v\n", conf))
 
 	// Store initialization.
 	if store, err = storeInit(ctx, store, &conf); err != nil {

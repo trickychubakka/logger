@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/handlers"
 	"logger/internal/storage/memstorage"
 	"os"
@@ -77,7 +77,7 @@ func Load(fname string) (handlers.Storager, error) {
 
 // SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики.
 // Для случая значения ключа STORE_INTERVAL = 0.
-func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *initconf.Config) gin.HandlerFunc {
+func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 		log.Println("SyncDumpUpdate StoreMetricInterval :", conf.StoreMetricInterval)
