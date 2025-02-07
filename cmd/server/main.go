@@ -235,10 +235,8 @@ func main() {
 		log.Fatal("Server Shutdown:", err)
 	}
 	// catching ctx.Done(). timeout of 5 seconds.
-	select {
-	case <-ctxHTTP.Done():
-		log.Println("timeout of", shutdownTimeout, " seconds.")
-	}
+	<-ctxHTTP.Done()
+	log.Println("timeout of", shutdownTimeout, " seconds.")
 
 	log.Println("SERVER STOPPED.")
 }
