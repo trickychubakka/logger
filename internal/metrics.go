@@ -1,3 +1,4 @@
+// Package internal.
 package internal
 
 import (
@@ -12,7 +13,8 @@ import (
 	"github.com/shirou/gopsutil/v4/mem"
 	"io"
 	"log"
-	"logger/conf"
+	"logger/config"
+	"logger/internal/encryption"
 	"math/rand"
 	"net/http"
 	"reflect"
@@ -20,16 +22,18 @@ import (
 	"time"
 )
 
+// MetricsStorage аналог memstorage хранилища метрик.
 type MetricsStorage struct {
 	gaugeMap   map[string]float64
 	counterMap map[string]int64
 }
 
 // Набор из 3-х таймаутов для повтора операции в случае retriable-ошибки
-var timeoutsRetryConst = [3]int{1, 3, 5}
+var timeoutsRetryConst = []int{1, 3, 5}
 
 var client = &http.Client{}
 
+// NewMetricsStorageObj конструктор объекта типа MetricsStorage.
 func NewMetricsStorageObj() MetricsStorage {
 	return MetricsStorage{
 		gaugeMap:   make(map[string]float64),
@@ -37,8 +41,8 @@ func NewMetricsStorageObj() MetricsStorage {
 	}
 }
 
-// MetricsPolling -- заполнение словаря метрик перебором всех полей структуры MemStats через reflect
-// с выбором метрик необходимых типов
+// MetricsPolling -- заполнение словаря метрик перебором всех полей структуры MemStats.
+// Для выбора метрик необходимых типов используется reflect.
 func MetricsPolling(metrics *MetricsStorage) error {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
@@ -60,10 +64,10 @@ func MetricsPolling(metrics *MetricsStorage) error {
 	}
 	metrics.counterMap["PollCount"] = 1
 	metrics.gaugeMap["RandomValue"] = rand.Float64()
-
 	return nil
 }
 
+// GopsMetricPolling -- заполнение словаря GOPS метрик.
 func GopsMetricPolling(metrics *MetricsStorage) error {
 	v, err := mem.VirtualMemory()
 	if err != nil {
@@ -79,14 +83,13 @@ func GopsMetricPolling(metrics *MetricsStorage) error {
 		return err
 	}
 	metrics.gaugeMap["CPUutilization1"] = c[0]
-
 	return nil
 }
 
-// hashBody функция подписи body отсылаемого сообщения
-// Если ключ задан (не равен "" в AgentConfig) -- возвращаем hash, true
-// Если ключ не задан -- возвращаем nil, false
-func hashBody(body []byte, config *conf.AgentConfig) ([]byte, bool) {
+// hashBody функция подписи body отсылаемого сообщения.
+// Если ключ задан (не равен "" в AgentConfig) -- возвращаем hash, true.
+// Если ключ не задан -- возвращаем nil, false.
+func hashBody(body []byte, config *config.AgentConfig) ([]byte, bool) {
 	if config.Key == "" {
 		log.Println("config.Key is empty")
 		return nil, false
@@ -98,8 +101,8 @@ func hashBody(body []byte, config *conf.AgentConfig) ([]byte, bool) {
 	return dst, true
 }
 
-func SendRequest(client *http.Client, url string, body io.Reader, contentType string, config *conf.AgentConfig) (*http.Response, error) {
-
+// SendRequest функция отсылки HTTP запроса к logger серверу.
+func SendRequest(client *http.Client, url string, body io.Reader, contentType string, config *config.AgentConfig) (*http.Response, error) {
 	var hash []byte
 	var keyBool bool
 
@@ -125,14 +128,29 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 		}
 
 		rawBody := buf.Bytes()
-		body = bytes.NewReader(rawBody)
-		// Считаем hash256 body ПОСЛЕ gzip-упаковки
+		//body = bytes.NewReader(rawBody)
+		// Считаем hash256 body ПОСЛЕ gzip-упаковки.
 		hash, keyBool = hashBody(rawBody, config)
 		log.Println("hash is:", hash, "keyBool is :", keyBool)
 		if err != nil {
 			log.Println("SendRequest. Error hashing body:", err)
 		}
 		log.Printf("HashSHA256 is : %x", hash)
+
+		// Шифруем RSA только если config.PathToPublicKey не пустой. Иначе трафик между агентом и сервером не шифруется.
+		// Внимание! Настройка на сервере PathToPrivateKey должна соответствовать config.PathToPublicKey агента --
+		// для отключения шифрования должна быть пустой.
+		// Добавка 040225 RSA START
+		if config.PathToPublicKey != "" {
+			encryptedBody, err1 := encryption.EncryptData(rawBody, config.PublicKey)
+			if err1 != nil {
+				log.Println("SendRequest. Error encrypting body:", err)
+			}
+			body = bytes.NewReader(encryptedBody)
+		} else {
+			body = bytes.NewReader(rawBody)
+		}
+		// Добавка 040225 RSA END
 	}
 
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -168,7 +186,6 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 			if err != nil {
 				log.Println("SendRequest: attempt ", i+1, " error is", err)
 				if i == 2 {
-					//panic(fmt.Errorf("%s %v", "SendRequest: PANIC in SendRequest.", err))
 					return nil, fmt.Errorf("%s %v", "SendRequest: client.Do error", err)
 				}
 				continue
@@ -184,8 +201,8 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	return response, nil
 }
 
-// SendMetrics отсылка метрик на сервер
-func SendMetrics(metrics *MetricsStorage, c string, config *conf.AgentConfig) error {
+// SendMetrics отсылка метрик на logger сервер.
+func SendMetrics(metrics *MetricsStorage, c string, config *config.AgentConfig) error {
 	count := 0
 
 	// Цикл для отсылки метрик типа gaugeMap
@@ -221,6 +238,7 @@ func SendMetrics(metrics *MetricsStorage, c string, config *conf.AgentConfig) er
 	return nil
 }
 
+// Metrics объект метрики.
 type Metrics struct {
 	ID    string   `json:"id"`              // Имя метрики
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
@@ -228,9 +246,10 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"` // Значение метрики в случае передачи gauge
 }
 
-func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
+// SendMetricsJSON отправка метрик на logger сервер в JSON в body, содержащим сериализованный объект метрики.
+func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *config.AgentConfig) error {
 	count := 0
-	// Цикл для отсылки метрик типа gaugeMap
+	// Цикл для отсылки метрик типа gaugeMap.
 	for m := range metrics.gaugeMap {
 		count++
 		log.Println(m, "=>", metrics.gaugeMap[m], "url:", reqURL, "JSON count:", count)
@@ -250,7 +269,7 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *conf.AgentC
 		defer response.Body.Close()
 	}
 
-	// Цикл для отсылки метрик типа counterMap
+	// Цикл для отсылки метрик типа counterMap.
 	for m := range metrics.counterMap {
 		count++
 		log.Println(m, "=>", metrics.counterMap[m], "url:", reqURL, "JSON count:", count)
@@ -273,6 +292,7 @@ func SendMetricsJSON(metrics *MetricsStorage, reqURL string, config *conf.AgentC
 	return nil
 }
 
+// MemstorageToMetrics конвертация хранилища метрик типа MetricsStorage в массив объектов Metrics.
 func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 	var metrics []Metrics
 	var tmpMetric Metrics
@@ -288,11 +308,12 @@ func MemstorageToMetrics(store MetricsStorage) ([]Metrics, error) {
 		tmpMetric.Delta = &v
 		metrics = append(metrics, tmpMetric)
 	}
-	//log.Println("MetricsToMemstorage: []Metrics :", metrics, " -> store :", store)
 	return metrics, nil
 }
 
-func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.AgentConfig) error {
+// SendMetricsJSONBatch отсылка набора метрик на logger сервер.
+// Метрики имеют вид сериализованного массива объектов Metrics.
+func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *config.AgentConfig) error {
 	tmpMetrics, err := MemstorageToMetrics(*metrics)
 	if err != nil {
 		log.Println("Error in SendMetricsJSONBatch:", err)
@@ -302,13 +323,12 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *conf.A
 	if err != nil {
 		log.Println("SendMetricsJSONBatch error in json.Marshal: ", err)
 	}
-	//log.Println("payload in SendMetricsJSONBatch is:", string(payload))
 
 	response, err := SendRequest(client, reqURL, bytes.NewReader(payload), "application/json", config)
 	if err != nil {
 		log.Println("SendMetricsJSONBatch: Error from SendRequest call:", err)
 		return err
 	}
-	defer response.Body.Close()
+	_ = response.Body.Close()
 	return nil
 }

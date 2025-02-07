@@ -1,3 +1,5 @@
+// Package database -- пакет, в котором определен интерфейс работы с БД и его имплементация для различных типов БД.
+// database.go -- определение общего интерфейса.
 package database
 
 import (
@@ -5,7 +7,7 @@ import (
 	"database/sql"
 )
 
-// Database интерфейс для БД
+// Database интерфейс для БД.
 type Database interface {
 	Connect(string) error
 	Close() error
