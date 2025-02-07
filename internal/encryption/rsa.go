@@ -1,3 +1,4 @@
+// Package encryption -- реализация шифрования тела HTTP запроса.
 package encryption
 
 import (
@@ -36,16 +37,12 @@ func GenerateRSAKeyPair(privKeyFile, pubKeyFile string) (*rsa.PrivateKey, *rsa.P
 		Type:  "RSA PRIVATE KEY",
 		Bytes: x509.MarshalPKCS1PrivateKey(key),
 	}
-	fmt.Println("Private Key PEM created")
-	//fmt.Println(string(pem.EncodeToMemory(privatePEMBlock)))
 
 	// Преобразование публичного ключа в PEM формат
 	publicPEMBlock := &pem.Block{
 		Type:  "RSA PUBLIC KEY",
 		Bytes: x509.MarshalPKCS1PublicKey(&key.PublicKey),
 	}
-	fmt.Println("Public Key PEM created")
-	//fmt.Println(string(pem.EncodeToMemory(publicPEMBlock)))
 
 	fullPath, err := filepath.Abs(privKeyFile)
 	if err != nil {
@@ -134,6 +131,7 @@ func ReadPublicKeyFile(filename string) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
+// EncryptOAEP шифрование данных открытым ключом chunk-ами из-за большого для RSA шифрования размера body.
 func EncryptOAEP(hash hash.Hash, random io.Reader, public *rsa.PublicKey, msg []byte, label []byte) ([]byte, error) {
 	msgLen := len(msg)
 	step := public.Size() - 2*hash.Size() - 2
@@ -156,6 +154,7 @@ func EncryptOAEP(hash hash.Hash, random io.Reader, public *rsa.PublicKey, msg []
 	return encryptedBytes, nil
 }
 
+// DecryptOAEP дешифрование данных открытым ключом chunk-ами из-за большого для RSA шифрования размера body.
 func DecryptOAEP(hash hash.Hash, random io.Reader, private *rsa.PrivateKey, msg []byte, label []byte) ([]byte, error) {
 	msgLen := len(msg)
 	step := private.PublicKey.Size()
@@ -183,7 +182,6 @@ func DecryptOAEP(hash hash.Hash, random io.Reader, private *rsa.PrivateKey, msg 
 // EncryptData шифрование данных открытым ключом.
 func EncryptData(data []byte, publicKey *rsa.PublicKey) ([]byte, error) {
 	hash := sha512.New()
-	//encryptedMessage, err := rsa.EncryptOAEP(hash, rand.Reader, publicKey, data, nil)
 	encryptedMessage, err := EncryptOAEP(hash, rand.Reader, publicKey, data, nil)
 	if err != nil {
 		return nil, fmt.Errorf("rsa.EncryptOAEP error: %v", err)
@@ -202,7 +200,7 @@ func DecryptData(data []byte, privateKey *rsa.PrivateKey) ([]byte, error) {
 	return encryptedMessage, nil
 }
 
-// Константы для определения шаблонов User-Agent из заголовков входящих пакетов, для которых не используется AES шифрование.
+// Константы для определения шаблонов User-Agent из заголовков входящих пакетов, для которых не используется RSA шифрование.
 const (
 	Postman = "ostman" // for Postman
 )

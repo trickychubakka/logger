@@ -184,7 +184,7 @@ func run(myMetrics internal.MetricsStorage, config *config.AgentConfig) {
 	}
 
 	exit := make(chan os.Signal, 1)
-	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(exit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
 	<-exit
 	// Graceful shutdown pprof http server if option -t enabled.
 	if config.PProfHTTPEnabled {
@@ -198,7 +198,6 @@ func run(myMetrics internal.MetricsStorage, config *config.AgentConfig) {
 	wg.Wait()
 	log.Println("Main done")
 	log.Println("AGENT STOPPED.")
-	//os.Exit(1)
 	log.Fatal()
 }
 

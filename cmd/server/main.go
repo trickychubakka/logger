@@ -29,7 +29,8 @@ import (
 
 const (
 	//configFile = `C:\JetBrains\GolandProjects\logger\internal\config\server.json`
-	configFile = `./config/server.json`
+	configFile      = `./config/server.json`
+	shutdownTimeout = 5
 )
 
 // Для возможности использования Zap.
@@ -133,22 +134,6 @@ func main() {
 	}
 	defer store.Close()
 
-	// Остановка сервера и сохранение дампа memstorage при остановке, если используется memstorage.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		// Если для хранения метрик не используется БД -- делаем DUMP метрик на диск.
-		if conf.DatabaseDSN == "" {
-			err := internal.Save(ctx, store, conf.FileStoragePath)
-			if err != nil {
-				log.Println("Save metric DUMP error:", err)
-			}
-		}
-		log.Println("SERVER STOPPED.")
-		log.Fatal()
-	}()
-
 	// Создаём предустановленный регистратор zap.
 	logger, err := zap.NewDevelopment()
 	if err != nil {
@@ -212,16 +197,47 @@ func main() {
 		pprof.Register(router)
 	}
 
-	err = router.Run(conf.RunAddr)
-	if err != nil {
-		panic(err)
+	// Запуск сервера через http.Server, чтобы воспользоваться Shutdown методом для graceful shutdown.
+	srv := &http.Server{
+		Addr:    conf.RunAddr,
+		Handler: router.Handler(),
 	}
 
-	sugar.Infow("\nServer started on runAddr %s \n", conf.RunAddr)
+	// Запуск listener в горутине, чтобы не блокировать graceful shutdown ниже.
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
 
-	// Завершаем дочерний контекст дампа, чтобы завершить горутину дампа метрик в файл.
-	if conf.DatabaseDSN == "" && conf.StoreMetricInterval != 0 {
-		cancelDUMP()
+	sugar.Infow("\nServer started on runAddr ", "RunAddr", conf.RunAddr)
+
+	// Остановка сервера и сохранение дампа memstorage при остановке, если используется memstorage.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	<-quit
+	log.Println("Shutdown Server ...")
+	// Если для хранения метрик не используется БД -- делаем DUMP метрик на диск.
+	if conf.DatabaseDSN == "" {
+		// Завершаем дочерний контекст дампа, чтобы завершить горутину дампа метрик в файл.
+		if conf.StoreMetricInterval != 0 {
+			cancelDUMP()
+		}
+		err := internal.Save(ctx, store, conf.FileStoragePath)
+		if err != nil {
+			log.Println("Save metric DUMP error:", err)
+		}
+	}
+
+	ctxHTTP, cancelHTTP := context.WithTimeout(context.Background(), shutdownTimeout*time.Second)
+	defer cancelHTTP()
+	if err := srv.Shutdown(ctxHTTP); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	// catching ctx.Done(). timeout of 5 seconds.
+	select {
+	case <-ctxHTTP.Done():
+		log.Println("timeout of", shutdownTimeout, " seconds.")
 	}
 
 	log.Println("SERVER STOPPED.")

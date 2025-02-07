@@ -54,7 +54,7 @@ type AgentConfig struct {
 }
 
 // ToJSON конвертация JSON с go-style комментариями в "чистый" JSON для json.Unmarshal.
-// Комментарии в конце строки должны быть оформлены в виде " // ".
+// Внимание! Комментарии в конце строки должны быть оформлены в виде " // ".
 func ToJSON(b []byte) []byte {
 	var res [][]byte
 	for _, s := range bytes.Split(b, []byte("\n")) {

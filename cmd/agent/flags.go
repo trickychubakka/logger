@@ -29,7 +29,6 @@ func initConfig(conf *config.AgentConfig) error {
 		LogFileFlag        string
 		key                string
 		RateLimitFlag      string
-		//PathToPublicKey    string
 	)
 
 	// Парсинг параметров командной строки.
@@ -136,6 +135,6 @@ func initConfig(conf *config.AgentConfig) error {
 		conf.PublicKey = publicKey
 	}
 
-	log.Printf("Address is %s, PollInterval is %d, ReportInterval is %d, LogFile is %s, RateLimit is %d, PathToPublicKey is %s \n", conf.Address, conf.PollInterval, conf.ReportInterval, conf.Logfile, conf.RateLimit, conf.PathToPublicKey)
+	log.Printf("Agent starting with conf %s \n", fmt.Sprintf("%+v\n", conf))
 	return nil
 }

@@ -106,54 +106,6 @@ func TestDecryptData(t *testing.T) {
 	}
 }
 
-//	func TestDecryptOAEP(t *testing.T) {
-//		type args struct {
-//			hash    hash.Hash
-//			random  io.Reader
-//			private *rsa.PrivateKey
-//			msg     []byte
-//			label   []byte
-//		}
-//		tests := []struct {
-//			name    string
-//			args    args
-//			want    []byte
-//			wantErr bool
-//		}{
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				got, err := DecryptOAEP(tt.args.hash, tt.args.random, tt.args.private, tt.args.msg, tt.args.label)
-//				if (err != nil) != tt.wantErr {
-//					t.Errorf("DecryptOAEP() error = %v, wantErr %v", err, tt.wantErr)
-//					return
-//				}
-//				if !reflect.DeepEqual(got, tt.want) {
-//					t.Errorf("DecryptOAEP() got = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
-//
-//	func TestDecryptRequestHandler(t *testing.T) {
-//		type args struct {
-//			in0        context.Context
-//			privateKey *rsa.PrivateKey
-//		}
-//		tests := []struct {
-//			name string
-//			args args
-//			want gin.HandlerFunc
-//		}{
-//		}
-//		for _, tt := range tests {
-//			t.Run(tt.name, func(t *testing.T) {
-//				if got := DecryptRequestHandler(tt.args.in0, tt.args.privateKey); !reflect.DeepEqual(got, tt.want) {
-//					t.Errorf("DecryptRequestHandler() = %v, want %v", got, tt.want)
-//				}
-//			})
-//		}
-//	}
 func TestEncryptData(t *testing.T) {
 	type args struct {
 		data      []byte
@@ -204,36 +156,6 @@ func TestEncryptData(t *testing.T) {
 		})
 	}
 }
-
-//
-//func TestEncryptOAEP(t *testing.T) {
-//	type args struct {
-//		hash   hash.Hash
-//		random io.Reader
-//		public *rsa.PublicKey
-//		msg    []byte
-//		label  []byte
-//	}
-//	tests := []struct {
-//		name    string
-//		args    args
-//		want    []byte
-//		wantErr bool
-//	}{
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			got, err := EncryptOAEP(tt.args.hash, tt.args.random, tt.args.public, tt.args.msg, tt.args.label)
-//			if (err != nil) != tt.wantErr {
-//				t.Errorf("EncryptOAEP() error = %v, wantErr %v", err, tt.wantErr)
-//				return
-//			}
-//			if !reflect.DeepEqual(got, tt.want) {
-//				t.Errorf("EncryptOAEP() got = %v, want %v", got, tt.want)
-//			}
-//		})
-//	}
-//}
 
 func TestGenerateRSAKeyPair(t *testing.T) {
 	type args struct {
