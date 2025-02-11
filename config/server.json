@@ -1,0 +1,18 @@
+{
+  "address": "localhost:8080",    // address and port to run server. Аналог переменной окружения ADDRESS или флага -a.
+    // comment1
+  "logfile": "",                  // server log file. Аналог переменной окружения SERVER_LOG или флага -l.
+//  "store_interval": "1s", // store metrics to disk interval in sec. 0 -- sync saving. Аналоги переменной окружения STORE_INTERVAL или флага -i.
+  "store_interval": 1, // store metrics to disk interval in sec. 0 -- sync saving. Аналоги переменной окружения STORE_INTERVAL или флага -i.
+      // comment2
+  "store_file": "", // file to save metrics to disk. Аналог переменной окружения FILE_STORAGE_PATH или -f.
+  "restore": true, // restore metrics dump with server start, true/false. Аналог переменной окружения RESTORE или флага -r
+  "database_dsn": "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", // database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Аналог переменной окружения DATABASE_DSN или флага -d
+  "key": "superkey", // Key. Аналог переменной окружения KEY или флага -k
+  "crypto_key": "", // Path to private key. Аналог переменной окружения CRYPTO_KEY или флага -crypto-key
+  "generate_keys": false, // Generation new RSA public and private keys, true/false. Аналог флага -generate-keys
+  "use_db_config": false, // use dbconfig/config yaml file +(conf/dbconfig.yaml), true/false. Аналог переменной окружения STORE_FILE или -c.
+  "pprof_http_enable": false, // Flag for enabling pprof web server.
+//  "trusted_subnet": "" // Trusted subnet in CIDR format. Аналог переменной окружения TRUSTED_SUBNET или -t
+  "trusted_subnet": "192.168.1.0/24" // Trusted subnet in CIDR format. Аналог переменной окружения TRUSTED_SUBNET или -t
+}

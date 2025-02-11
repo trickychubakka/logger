@@ -1,3 +1,4 @@
+// Package handlers -- пакет с реализацией gin-handler-ов logger сервера.
 package handlers
 
 import (
@@ -12,7 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
-	"logger/cmd/server/initconf"
+	"net/netip"
+
+	//"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/database"
 	"logger/internal/storage"
 	"logger/internal/storage/memstorage"
@@ -29,6 +33,7 @@ const (
 	metricValue = 3
 )
 
+// Storager интерфейс с используемыми методами.
 type Storager interface {
 	UpdateGauge(ctx context.Context, key string, value float64) error
 	UpdateCounter(ctx context.Context, key string, value int64) error
@@ -40,7 +45,7 @@ type Storager interface {
 	Close() error
 }
 
-// urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/"
+// urlToMap парсинг URL в map по разделителям "/" с предварительным удалением крайних "/".
 func urlToMap(url string) ([]string, error) {
 	splittedURL := strings.Split(strings.Trim(url, "/"), "/")
 	// Если длина разобранного URL не больше 2-х -- недостаток указания метрики/значения, возвращаем StatusNotFound
@@ -55,7 +60,7 @@ func urlToMap(url string) ([]string, error) {
 	return splittedURL, nil
 }
 
-// MetricsToMemstorage функция конвертации Metrics в Memstorage
+// MetricsToMemstorage функция конвертации объекта Metrics в Memstorage.
 func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memstorage.MemStorage, error) {
 	stor, _ := memstorage.New(ctx)
 	for _, m := range metrics {
@@ -70,8 +75,8 @@ func MetricsToMemstorage(ctx context.Context, metrics []storage.Metrics) (memsto
 	return stor, nil
 }
 
-// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context
-func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
+// hashBody функция вычисления hash-а body сообщения и подписи сообщения в контексте gin.Context.
+func hashBody(body []byte, config *config.Config, c *gin.Context) error {
 	if config.Key == "" {
 		log.Println("config.Key is empty")
 		return nil
@@ -79,14 +84,12 @@ func hashBody(body []byte, config *initconf.Config, c *gin.Context) error {
 	h := hmac.New(sha256.New, []byte(config.Key))
 	h.Write(body)
 	hash := h.Sum(nil)
-	fmt.Printf("%x", hash)
-	log.Println("hash is:", hash)
-	log.Printf("HashSHA256 is : %x", hash)
 	c.Header("HashSHA256", hex.EncodeToString(hash))
 	return nil
 }
 
-// MetricsHandler -- Gin handlers обработки запросов по изменениям метрик через URL
+// MetricsHandler -- Gin handler обработки запросов по изменениям метрик через URL.
+// Обрабатывает GET запросы типа /update/:metricType/:metricName/:metricValue.
 func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
@@ -131,8 +134,9 @@ func MetricsHandler(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
-// MetricHandlerJSON -- Gin handlers обработки запросов по изменениям метрик через JSON в Body
-func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+// MetricHandlerJSON -- Gin handler обработки запросов по изменениям метрик через JSON в Body.
+// Обрабатывает POST запросы на /update/ c JSON-ом метрики в body запроса.
+func MetricHandlerJSON(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Println("MetricHandlerJSON START")
 		jsn, err := io.ReadAll(c.Request.Body)
@@ -203,8 +207,9 @@ func MetricHandlerJSON(ctx context.Context, store Storager, conf *initconf.Confi
 	}
 }
 
-// MetricHandlerBatchUpdate -- Gin handlers обработки batch запроса по изменениям batch-а метрик через []Metrics в Body
-func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+// MetricHandlerBatchUpdate -- Gin handler обработки batch запроса по изменениям batch-а метрик через []Metrics в Body.
+// Обрабатывает POST запросы на /updates c JSON-ом с несколькими метраками в body запроса.
+func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
 		if err != nil {
@@ -222,8 +227,6 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initcon
 		}
 
 		log.Println("MetricHandlerBatchUpdate: Requested JSON batch metric UPDATES with next []metric", tmpMetrics)
-
-		log.Println("MetricHandlerBatchUpdate: tmpMetrics : ", tmpMetrics, " -> store :", store)
 
 		j2 := io.NopCloser(bytes.NewBuffer(jsn))
 		log.Println("MetricHandlerBatchUpdate: Request from j2:", j2)
@@ -255,22 +258,47 @@ func MetricHandlerBatchUpdate(ctx context.Context, store Storager, conf *initcon
 	}
 }
 
-// GetAllMetrics получить все метрики
+// memStor тип для кастования в него объекта memstorage.MemStorage перед кодированием в JSON из-за приватности исходных полей.
+type memStor struct {
+	GaugeMap   map[string]float64
+	CounterMap map[string]int64
+}
+
+// GetAllMetrics Gin handler получения всех метрик.
+// Обрабатывает GET запросы на / .
 func GetAllMetrics(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
+		var t memStor
 		metrics, err := store.GetAllMetrics(ctx)
 		if err != nil {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		c.Header("content-type", "text/html; charset=utf-8")
-		c.Status(http.StatusOK)
-		c.IndentedJSON(http.StatusOK, metrics)
+		// metrics может быть типа memstorage.MemStorage. В этом случае из-за приватности map этого типа
+		// он не будет правильно кодироваться в JSON. Необходимо кастовать в тип memStor.
+		switch v := metrics.(type) {
+		case memstorage.MemStorage:
+			log.Println("GetAllMetrics: store type", v)
+			m, ok := metrics.(memstorage.MemStorage)
+			if !ok {
+				log.Println("GetAllMetrics error cast metric")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+			t.GaugeMap, _ = m.GetAllGaugesMap(ctx)
+			t.CounterMap, _ = m.GetAllCountersMap(ctx)
+			c.Header("content-type", "text/html; charset=utf-8")
+			c.IndentedJSON(http.StatusOK, t)
+		default:
+			log.Println("GetAllMetrics: store type", v)
+			c.Header("content-type", "text/html; charset=utf-8")
+			c.IndentedJSON(http.StatusOK, metrics)
+		}
 	}
 }
 
-// GetMetric получить значение метрики
+// GetMetric Gin handler получения значение метрики.
+// Обрабатывает GET запросы типа /value/:metricType/:metricName.
 func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		splittedURL, err := urlToMap(c.Request.URL.String())
@@ -294,15 +322,17 @@ func GetMetric(ctx context.Context, store Storager) gin.HandlerFunc {
 	}
 }
 
-// GetMetricJSON получить значение метрики через JSON
-func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) gin.HandlerFunc {
+// GetMetricJSON Gin handler получения значения метрики через POST запрос с JSON с параметрами запрошенной метрики.
+// Обрабатывает POST запросы на /value/.
+func GetMetricJSON(ctx context.Context, store Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		jsn, err := io.ReadAll(c.Request.Body)
-		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
+
 		if err != nil {
 			http.Error(c.Writer, "GetMetricJSON: Error in json body read", http.StatusInternalServerError)
 			return
 		}
+		log.Println("GetMetricJSON, jsn after ReadAll:", string(jsn))
 
 		var tmpMetric storage.Metrics
 
@@ -361,6 +391,8 @@ func GetMetricJSON(ctx context.Context, store Storager, conf *initconf.Config) g
 	}
 }
 
+// DBPing Gin handler проверки соединения с БД.
+// Обрабатывает GET запрос на /ping.
 func DBPing(connStr string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Тест коннекта к базе
@@ -370,7 +402,12 @@ func DBPing(connStr string) gin.HandlerFunc {
 		if err != nil {
 			log.Println("Error connecting to database :", err)
 		}
-		defer db.Close()
+		defer func(db *database.Postgresql) {
+			err := db.Close()
+			if err != nil {
+				log.Println("DBPing: db.Close() error", err)
+			}
+		}(&db)
 		err = db.Ping()
 		if err != nil {
 			log.Println("database connect error")
@@ -379,6 +416,64 @@ func DBPing(connStr string) gin.HandlerFunc {
 		}
 		log.Println("database connected")
 		c.Status(http.StatusOK)
+		c.Next()
+	}
+}
+
+// ipInNetwork проверка принадлежности адреса указанной подсети.
+func ipInNetwork(ip, network string) (error, bool) {
+	//var err error
+	net, err := netip.ParsePrefix(network)
+	if err != nil {
+		log.Println("Error netip.ParsePrefix:", err)
+		return err, false
+	}
+
+	ipAddr, err := netip.ParseAddr(ip)
+	if err != nil {
+		log.Println("Error netip.ParseAddr:", err)
+		return err, false
+	}
+	return nil, net.Contains(ipAddr)
+}
+
+//var localIp = map[string]bool{"127.0.0.1": true, "::1": true}
+
+func isLocalhost(ip string) bool {
+	var localIP = map[string]bool{"127.0.0.1": true, "::1": true}
+	return localIP[ip]
+}
+
+func CheckTrustedSubnet(conf *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIP := c.Request.Header.Get("X-Real-IP")
+		log.Println("Agent X-Real-IP is", userIP)
+
+		// Разрешаем localhost коннекты.
+		if isLocalhost(userIP) {
+			log.Println("CheckTrustedSubnet. Agent X-Real-IP is localhost IP. Accepted.")
+			c.Set("checkTrustedSubnet", "localip") // For test.
+			c.Next()
+			return
+		}
+
+		err, ok := ipInNetwork(userIP, conf.TrustedSubnet)
+		if err != nil {
+			log.Println("checkTrustedSubnet: checkTrustedSubnet for X-Real-IP ", userIP, " error", err)
+			c.Set("checkTrustedSubnet", "error") // For test.
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		if !ok {
+			log.Println("checkTrustedSubnet: ip address", userIP, " is not in trusted network. Forbidden.")
+			c.Set("checkTrustedSubnet", "forbidden") // For test.
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		log.Println("CheckTrustedSubnet. Agent X-Real-IP is in trusted ip network. Accepted.")
+		c.Set("checkTrustedSubnet", "success") // For test.
 		c.Next()
 	}
 }

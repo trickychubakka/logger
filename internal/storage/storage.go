@@ -1,5 +1,7 @@
+// Package storage -- пакет с определением объектов используемого в logger хранилища.
 package storage
 
+// Metrics структура для хранения одной метрики.
 type Metrics struct {
 	ID    string   `json:"id"`              // Имя метрики.
 	MType string   `json:"type"`            // Параметр, принимающий значение gauge или counter.
