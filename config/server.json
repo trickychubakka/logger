@@ -12,5 +12,7 @@
   "crypto_key": "", // Path to private key. Аналог переменной окружения CRYPTO_KEY или флага -crypto-key
   "generate_keys": false, // Generation new RSA public and private keys, true/false. Аналог флага -generate-keys
   "use_db_config": false, // use dbconfig/config yaml file +(conf/dbconfig.yaml), true/false. Аналог переменной окружения STORE_FILE или -c.
-  "pprof_http_enable": false // Flag for enabling pprof web server.
+  "pprof_http_enable": false, // Flag for enabling pprof web server.
+//  "trusted_subnet": "" // Trusted subnet in CIDR format. Аналог переменной окружения TRUSTED_SUBNET или -t
+  "trusted_subnet": "192.168.1.0/24" // Trusted subnet in CIDR format. Аналог переменной окружения TRUSTED_SUBNET или -t
 }

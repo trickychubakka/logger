@@ -171,6 +171,7 @@ func SendRequest(client *http.Client, url string, body io.Reader, contentType st
 	}
 	req.Header.Set("Content-Type", contentType)
 	req.Header.Set("Content-Encoding", "compress")
+	req.Header.Set("X-Real-IP", config.AgentIP)
 
 	log.Println("req.Header is:", req.Header)
 

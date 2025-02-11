@@ -73,11 +73,13 @@ func readDBConfig(configName string, configPath string) (string, error) {
 // Переменные окружения имеют приоритет перед параметрами командной строки.
 func InitConfig(conf *config.Config) error {
 	var envGenerateRSAKeys bool
+	var flagTrustedSubnet string
 	var err error
 	log.Println("InitConfig, SUFFIX =", suffix)
 	if !FlagTest {
 		log.Println("start parsing flags")
 		flag.StringVar(&conf.RunAddr, "a", "localhost:8080", "address and port to run server. Default localhost:8080.")
+		//flag.StringVar(&conf.RunAddr, "a", "192.168.1.115:8080", "address and port to run server. Default localhost:8080.")
 		flag.StringVar(&conf.Logfile, "l", "", "server log file. Default empty.")
 		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 10 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
@@ -86,13 +88,14 @@ func InitConfig(conf *config.Config) error {
 		//flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
 		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
 		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
+		flag.StringVar(&flagTrustedSubnet, "t", "", "Trusted subnet in CIDR format alike 10.10.10.0/192. Default empty.")
 		flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "./id_rsa", "Path to private key. Default is ./id_rsa")
 		//flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "", "Path to private key. Default is ./id_rsa")
 		flag.BoolVar(&envGenerateRSAKeys, "generate-keys", true, "To generation new RSA public and private "+
 			"keys and save them to the same with conf.PathToPrivateKey directory. Default false. "+
 			"Naming: private key filename defined with -generate-keys option, public filename will be `privateKey filename + .pub`")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file +(conf/dbconfig.yaml). Default false.")
-		flag.BoolVar(&conf.PProfHTTPEnabled, "t", true, "Flag for enabling pprof web server. Default false.")
+		flag.BoolVar(&conf.PProfHTTPEnabled, "p", true, "Flag for enabling pprof web server. Default false.")
 		flag.Parse()
 	}
 
@@ -121,10 +124,14 @@ func InitConfig(conf *config.Config) error {
 		log.Println("conf.runAddr is IP address, Using IP:", conf.RunAddr)
 		//return nil
 	}
-	// Если адрес не является валидным URI -- возвращаем ошибку.
+	// Если адрес не является валидным URI -- проверяем, не является ли адрес IP адресом.
+	// Если оба условия false -- возвращаем ошибку.
 	if _, err := url.ParseRequestURI(conf.RunAddr); err != nil {
-		log.Println("Error parsing RequestURI", err)
-		return fmt.Errorf("invalid ADDRESS variable `%s`, wrong RequestURI", conf.RunAddr)
+		if !IsValidIP(ipPort[0]) {
+			log.Println("Error parsing RequestURI", err)
+			return fmt.Errorf("invalid ADDRESS variable `%s`, wrong RequestURI", conf.RunAddr)
+		}
+		log.Println("conf.runAddr is IP address, Using IP:", conf.RunAddr)
 	}
 
 	if envLogFileFlag := os.Getenv("SERVER_LOG" + suffix); envLogFileFlag != "" {
@@ -172,6 +179,23 @@ func InitConfig(conf *config.Config) error {
 			log.Println("Error reading dbconfig.yaml:", err)
 		} else {
 			conf.DatabaseDSN = connStr
+		}
+	}
+
+	// Если значение, переданное через ключ, непустое -- сохраняем в conf.TrustedSubnet это значение.
+	// Если определена переменная окружения TRUSTED_SUBNET -- сохраняем ее.
+	if flagTrustedSubnet != "" {
+		conf.TrustedSubnet = flagTrustedSubnet
+	}
+	if envTrustedSubnet := os.Getenv("TRUSTED_SUBNET" + suffix); envTrustedSubnet != "" {
+		log.Println("env var TRUSTED_SUBNET was specified, use TRUSTED_SUBNET")
+		conf.TrustedSubnet = envTrustedSubnet
+		log.Println("Using trusted subnet ", conf.TrustedSubnet)
+	}
+	// Проверка валидности строки с подсетью, если задана не пустая строка.
+	if conf.TrustedSubnet != "" {
+		if _, _, err1 := net.ParseCIDR(conf.TrustedSubnet); err1 != nil {
+			return fmt.Errorf("invalid trusted subnet `%s`", conf.TrustedSubnet)
 		}
 	}
 

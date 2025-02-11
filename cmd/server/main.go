@@ -169,6 +169,9 @@ func main() {
 	// GIN init.
 	router := gin.Default()
 	router.Use(logging.WithLogging(&sugar))
+	if conf.TrustedSubnet != "" {
+		router.Use(handlers.CheckTrustedSubnet(&conf))
+	}
 	if conf.PathToPrivateKey != "" {
 		router.Use(encryption.DecryptRequestHandler(ctx, conf.PrivateKey))
 	}

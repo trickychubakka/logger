@@ -38,6 +38,7 @@ type Config struct {
 	TestMode            bool            `json:""`                  // Turn On test mode. For unit testing.
 	PathToPrivateKey    string          `json:"crypto_key"`        // Path to private key.
 	PrivateKey          *rsa.PrivateKey `json:""`                  // RSA private key.
+	TrustedSubnet       string          `json:"trusted_subnet"`    // Trusted subnet in CIDR format.
 }
 
 // AgentConfig конфигурация logger агента.
@@ -51,6 +52,7 @@ type AgentConfig struct {
 	PProfHTTPEnabled bool           `json:"pprof_http_enable"` // Flag for enabling pprof web server.
 	PathToPublicKey  string         `json:"crypto_key"`        // Path to RSA public key file.
 	PublicKey        *rsa.PublicKey `json:""`                  // RSA public key.
+	AgentIP          string         `json:"agent_ip"`          // Agent IP address (preferred outbound ip address).
 }
 
 // ToJSON конвертация JSON с go-style комментариями в "чистый" JSON для json.Unmarshal.
@@ -81,15 +83,15 @@ func ReadConfig(fileName string, conf any) error {
 		return err
 	}
 	jsn := ToJSON(data)
-	//log.Println("ReadConfig. jsn is: ", string(jsn))
+	log.Println("ReadConfig. jsn is: ", string(jsn))
 	// Если на вход получена конфигурация сервера.
 	if reflect.DeepEqual(reflect.TypeOf(conf), reflect.TypeOf(&serverConf)) {
 		log.Println("reflect.TypeOf(conf) is *Config")
-		err = json.Unmarshal(jsn, &serverConf)
+		err = json.Unmarshal(jsn, &conf)
 		// Если на вход получена конфигурация агента.
 	} else if reflect.TypeOf(conf) == reflect.TypeOf(&agentConf) {
 		log.Println("reflect.TypeOf(conf) is *AgentConfig")
-		err = json.Unmarshal(jsn, conf)
+		err = json.Unmarshal(jsn, &conf)
 		// Если полученное на вход непонятно.
 	} else {
 		return errors.New("wrong config")

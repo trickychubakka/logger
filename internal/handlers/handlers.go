@@ -13,6 +13,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
+	"net/netip"
+
 	//"logger/cmd/server/initconf"
 	"logger/config"
 	"logger/internal/database"
@@ -414,6 +416,67 @@ func DBPing(connStr string) gin.HandlerFunc {
 		}
 		log.Println("database connected")
 		c.Status(http.StatusOK)
+		c.Next()
+	}
+}
+
+// ipInNetwork проверка принадлежности адреса указанной подсети.
+func ipInNetwork(ip, network string) (error, bool) {
+	//var err error
+	net, err := netip.ParsePrefix(network)
+	if err != nil {
+		log.Println("Error netip.ParsePrefix:", err)
+		return err, false
+	}
+
+	ipAddr, err := netip.ParseAddr(ip)
+	if err != nil {
+		log.Println("Error netip.ParseAddr:", err)
+		return err, false
+	}
+	return nil, net.Contains(ipAddr)
+}
+
+//var localIp = map[string]bool{"127.0.0.1": true, "::1": true}
+
+func isLocalhost(ip string) bool {
+	var localIP = map[string]bool{"127.0.0.1": true, "::1": true}
+	if localIP[ip] {
+		return true
+	}
+	return false
+}
+
+func CheckTrustedSubnet(conf *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userIP := c.Request.Header.Get("X-Real-IP")
+		log.Println("Agent X-Real-IP is", userIP)
+
+		// Разрешаем localhost коннекты.
+		if isLocalhost(userIP) {
+			log.Println("CheckTrustedSubnet. Agent X-Real-IP is localhost IP. Accepted.")
+			c.Set("checkTrustedSubnet", "localip") // For test.
+			c.Next()
+			return
+		}
+
+		err, ok := ipInNetwork(userIP, conf.TrustedSubnet)
+		if err != nil {
+			log.Println("checkTrustedSubnet: checkTrustedSubnet for X-Real-IP ", userIP, " error", err)
+			c.Set("checkTrustedSubnet", "error") // For test.
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		if !ok {
+			log.Println("checkTrustedSubnet: ip address", userIP, " is not in trusted network. Forbidden.")
+			c.Set("checkTrustedSubnet", "forbidden") // For test.
+			c.Status(http.StatusForbidden)
+			return
+		}
+
+		log.Println("CheckTrustedSubnet. Agent X-Real-IP is in trusted ip network. Accepted.")
+		c.Set("checkTrustedSubnet", "success") // For test.
 		c.Next()
 	}
 }

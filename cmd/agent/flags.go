@@ -20,6 +20,21 @@ func IsValidIP(ip string) bool {
 	return res != nil
 }
 
+// GetAgentOutboundIP get preferred outbound ip of this machine
+// На хосте может быть несколько адресов. Ищем тот, который используется для исходящих в сторону сервера пакетов.
+func GetAgentOutboundIP(extIP string) (string, error) {
+	conn, err := net.Dial("udp", extIP)
+	if err != nil {
+		log.Println("GetAgentOutboundIP error :", err)
+		return "", err
+	}
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String(), nil
+}
+
 // initConfig функция инициализации конфигурации агента с использованием параметров командной строки.
 func initConfig(conf *config.AgentConfig) error {
 	var (
@@ -35,6 +50,7 @@ func initConfig(conf *config.AgentConfig) error {
 	// Настройки переменных окружения имеют приоритет перед параметрами командной строки.
 	if !FlagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port of logger server")
+		//flag.StringVar(&AddressFlag, "a", "192.168.1.115:8080", "address and port of logger server")
 		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
 		// Для логирования агента в лог файл необходимо определить флаг -l
@@ -134,6 +150,13 @@ func initConfig(conf *config.AgentConfig) error {
 		}
 		conf.PublicKey = publicKey
 	}
+
+	ip, err1 := GetAgentOutboundIP(conf.Address)
+	if err1 != nil {
+		log.Println("InitConfig: Error getting agent outbound IP address", err)
+		return fmt.Errorf("%s %v", "Error getting agent outbound IP address", err)
+	}
+	conf.AgentIP = ip
 
 	log.Printf("Agent starting with conf %s \n", fmt.Sprintf("%+v\n", conf))
 	return nil
