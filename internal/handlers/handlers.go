@@ -441,10 +441,7 @@ func ipInNetwork(ip, network string) (error, bool) {
 
 func isLocalhost(ip string) bool {
 	var localIP = map[string]bool{"127.0.0.1": true, "::1": true}
-	if localIP[ip] {
-		return true
-	}
-	return false
+	return localIP[ip]
 }
 
 func CheckTrustedSubnet(conf *config.Config) gin.HandlerFunc {
