@@ -47,7 +47,7 @@ func (m *MetricsBunchServer) AddBunch(ctx context.Context, in *pb.AddBunchReques
 
 	if err := m.Store.UpdateBatch(ctx, mBunch); err != nil {
 		log.Println("AddBunch. Error in AddBunch:", err)
-		response.Error = fmt.Sprintf("AddBunch. Error in AddBunch.")
+		response.Error = fmt.Sprintf("AddBunch. Error in AddBunch %s", err)
 	}
 	return &response, nil
 }
