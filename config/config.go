@@ -39,6 +39,8 @@ type Config struct {
 	PathToPrivateKey    string          `json:"crypto_key"`        // Path to private key.
 	PrivateKey          *rsa.PrivateKey `json:""`                  // RSA private key.
 	TrustedSubnet       string          `json:"trusted_subnet"`    // Trusted subnet in CIDR format.
+	GRPCEnabled         bool            `json:""`                  // Turn On gRPC.
+	GRPCRunAddr         string          `json:"grpc_address"`      // Address and port to run gRPC server.
 }
 
 // AgentConfig конфигурация logger агента.
@@ -53,6 +55,8 @@ type AgentConfig struct {
 	PathToPublicKey  string         `json:"crypto_key"`        // Path to RSA public key file.
 	PublicKey        *rsa.PublicKey `json:""`                  // RSA public key.
 	AgentIP          string         `json:"agent_ip"`          // Agent IP address (preferred outbound ip address).
+	GRPCEnabled      bool           `json:""`                  // Turn On gRPC.
+	GRPCRunAddr      string         `json:"grpc_address"`      // Address and port of gRPC server.
 }
 
 // ToJSON конвертация JSON с go-style комментариями в "чистый" JSON для json.Unmarshal.

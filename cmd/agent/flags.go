@@ -61,6 +61,8 @@ func initConfig(conf *config.AgentConfig) error {
 		flag.BoolVar(&conf.PProfHTTPEnabled, "t", false, "Flag for enabling pprof web server. Default false.")
 		flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
 		//flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
+		flag.BoolVar(&conf.GRPCEnabled, "g", true, "Flag for enabling grpc. Default false.")
+		flag.StringVar(&conf.GRPCRunAddr, "grpc-address", "localhost:3200", "address and port of gRPC server. Default localhost:3200.")
 
 		flag.Parse()
 	}

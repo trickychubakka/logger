@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package logger;
+
+option go_package = "logger/proto";
+
+// Аналог структуры Metrics.
+//   type Metrics struct {
+//    ID    string   `json:"id"`
+//    MType string   `json:"type"`
+//    Delta *int64   `json:"delta,omitempty"`
+//    Value *float64 `json:"value,omitempty"`
+//    }
+
+message Metric {
+  string id = 1;
+  string type = 2;
+  sfixed64 delta = 3;
+  double value = 4;
+}
+
+message Bunch {
+  repeated Metric metric = 1;
+}
+
+message AddBunchRequest {
+  Bunch bunch = 1;
+}
+
+message AddBunchResponse {
+  string error = 1;
+}
+
+service MetricsBunch {
+  rpc AddBunch(AddBunchRequest) returns (AddBunchResponse);
+}

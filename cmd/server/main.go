@@ -9,8 +9,10 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"log"
 	"logger/cmd/server/initconf"
+	"logger/cmd/server/protoserver"
 	"logger/config"
 	"logger/internal"
 	"logger/internal/compress"
@@ -19,12 +21,16 @@ import (
 	"logger/internal/logging"
 	"logger/internal/storage/memstorage"
 	"logger/internal/storage/pgstorage"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	// импортируем пакет со сгенерированными protobuf-файлами
+	pb "logger/cmd/proto"
 )
 
 const (
@@ -98,6 +104,42 @@ func storeInit(ctx context.Context, store handlers.Storager, conf *config.Config
 }
 
 var err error
+
+//type MetricsBunchServer struct {
+//	pb.UnimplementedMetricsBunchServer
+//	store handlers.Storager
+//}
+//
+//// BunchToMemstorage конвертация хранилища метрик типа pb.Bunch в MetricsStorage.
+//func BunchToMemstorage(p *pb.Bunch) ([]storage.Metrics, error) {
+//	var metrics []storage.Metrics
+//	var tmpMetric storage.Metrics
+//	for _, v := range p.GetMetric() {
+//		tmpMetric.ID = v.Id
+//		tmpMetric.MType = v.Type
+//		tmpMetric.Value = &v.Value
+//		tmpMetric.Delta = &v.Delta
+//		fmt.Printf("BunchToMemstorage -- ID: %s, Type: %s, Value is: %f, Delta is: %d ", tmpMetric.ID, tmpMetric.MType, *tmpMetric.Value, *tmpMetric.Delta)
+//		metrics = append(metrics, tmpMetric)
+//	}
+//	return metrics, nil
+//}
+//
+//func (m *MetricsBunchServer) AddBunch(ctx context.Context, in *pb.AddBunchRequest) (*pb.AddBunchResponse, error) {
+//	var response pb.AddBunchResponse
+//	mBunch, err := BunchToMemstorage(in.Bunch)
+//	if err != nil {
+//		log.Println("AddBunch error:", err)
+//	}
+//
+//	log.Println("AddBunch: mBunch :", mBunch)
+//
+//	if err := m.store.UpdateBatch(ctx, mBunch); err != nil {
+//		log.Println("AddBunch. Error in AddBunch:", err)
+//		response.Error = fmt.Sprintf("AddBunch. Error in AddBunch.")
+//	}
+//	return &response, nil
+//}
 
 func main() {
 	// Изменение режима работы GIN.
@@ -213,6 +255,28 @@ func main() {
 		}
 	}()
 
+	// Запуск gRPC сервера в горутине, если определена опция conf.GRPCEnabled.
+	var gSrv *grpc.Server
+	if conf.GRPCEnabled {
+		go func() {
+			//listen, err := net.Listen("tcp", ":3200")
+			listen, err := net.Listen("tcp", conf.GRPCRunAddr)
+			if err != nil {
+				log.Fatal(err)
+			}
+			// создаём gRPC-сервер без зарегистрированной службы
+			gSrv = grpc.NewServer()
+			// регистрируем сервис
+			pb.RegisterMetricsBunchServer(gSrv, &protoserver.MetricsBunchServer{Store: store})
+
+			fmt.Println("Сервер gRPC начал работу")
+			// получаем запрос gRPC
+			if err := gSrv.Serve(listen); err != nil {
+				log.Fatal(err)
+			}
+		}()
+	}
+
 	sugar.Infow("\nServer started on runAddr ", "RunAddr", conf.RunAddr)
 
 	// Остановка сервера и сохранение дампа memstorage при остановке, если используется memstorage.
@@ -242,4 +306,10 @@ func main() {
 	log.Println("timeout of", shutdownTimeout, " seconds.")
 
 	log.Println("SERVER STOPPED.")
+
+	if conf.GRPCEnabled {
+		log.Println("Stop gRPC server.")
+		gSrv.Stop()
+		log.Println("gRPC server stopped.")
+	}
 }

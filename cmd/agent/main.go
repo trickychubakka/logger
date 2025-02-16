@@ -101,22 +101,31 @@ func metricsReport(ctx context.Context, m *sync.RWMutex, myMetrics *internal.Met
 		default:
 			if counter == config.ReportInterval {
 				m.RLock()
-				log.Println("run. SendMetricsJSONBatch start. myMetrics is:", myMetrics)
-				if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
-					// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err.
-					// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount.
-					// Если это не client.Do ошибка -- сразу возвращаем error.
-					if strings.Contains(err.Error(), "client.Do error") && errorCount >= clientDoErrors {
-						log.Println("main: client.Do error from SendMetricsJSONBatch:", err, "errorCount > 3, raise panic")
+				log.Println("run. SendMetrics start. myMetrics is:", myMetrics)
+
+				if config.GRPCEnabled {
+					if err := internal.ProtoSendMetrics(myMetrics, config); err != nil {
+						log.Println("metricsReport error :", err)
 						return err
 					}
-					if !strings.Contains(err.Error(), "client.Do error") {
-						log.Println("metricsReport, error from SendMetricsJSONBatch:", err)
-						return err
+				} else {
+					if err := internal.SendMetricsJSONBatch(myMetrics, "http://"+config.Address+"/updates", config); err != nil {
+						// Если это ошибка подключения к серверу client.Do error -- игнорируем clientDoErrors ошибок, после возвращаем err.
+						// Если количество ошибок подключения к серверу >= clientDoErrors -- увеличиваем счетчик ошибок errorCount.
+						// Если это не client.Do ошибка -- сразу возвращаем error.
+						if strings.Contains(err.Error(), "client.Do error") && errorCount >= clientDoErrors {
+							log.Println("main: client.Do error from SendMetricsJSONBatch:", err, "errorCount > 3, raise panic")
+							return err
+						}
+						if !strings.Contains(err.Error(), "client.Do error") {
+							log.Println("metricsReport, error from SendMetricsJSONBatch:", err)
+							return err
+						}
+						log.Println("metricsReport, client.Do error from SendMetricsJSONBatch:", err, "errorCount is", errorCount, " ignore this error")
+						errorCount++
 					}
-					log.Println("metricsReport, client.Do error from SendMetricsJSONBatch:", err, "errorCount is", errorCount, " ignore this error")
-					errorCount++
 				}
+
 				m.RUnlock()
 				counter = 0
 			}

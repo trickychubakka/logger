@@ -84,8 +84,8 @@ func InitConfig(conf *config.Config) error {
 		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 10 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
-		flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
-		//flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		//flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
+		flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
 		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
 		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
 		flag.StringVar(&flagTrustedSubnet, "t", "", "Trusted subnet in CIDR format alike 10.10.10.0/192. Default empty.")
@@ -96,6 +96,8 @@ func InitConfig(conf *config.Config) error {
 			"Naming: private key filename defined with -generate-keys option, public filename will be `privateKey filename + .pub`")
 		flag.BoolVar(&conf.UseDBConfig, "c", false, "true/false flag -- use dbconfig/config yaml file +(conf/dbconfig.yaml). Default false.")
 		flag.BoolVar(&conf.PProfHTTPEnabled, "p", true, "Flag for enabling pprof web server. Default false.")
+		flag.BoolVar(&conf.GRPCEnabled, "grpc-enable", true, "Flag for enabling grpc. Default false.")
+		flag.StringVar(&conf.GRPCRunAddr, "grpc-address", "localhost:3200", "address and port to run gRPC server. Default localhost:3200.")
 		flag.Parse()
 	}
 
@@ -132,6 +134,14 @@ func InitConfig(conf *config.Config) error {
 			return fmt.Errorf("invalid ADDRESS variable `%s`, wrong RequestURI", conf.RunAddr)
 		}
 		log.Println("conf.runAddr is IP address, Using IP:", conf.RunAddr)
+	}
+
+	// Если задана непустая переменная окружения GRPC_ADDRESS в формате адрес:порт -- стартует gRPC сервер с адресом, заданным в GRPC_ADDRESS.
+	log.Println("Trying to read GRPC_ADDRESS environment variable (env has priority over flags): ", os.Getenv("GRPC_ADDRESS"))
+	if envGRPCRunAddr := os.Getenv("GRPC_ADDRESS" + suffix); envGRPCRunAddr != "" {
+		fmt.Println("Using env var GRPC_ADDRESS:", envGRPCRunAddr)
+		conf.RunAddr = envGRPCRunAddr
+		conf.GRPCEnabled = true
 	}
 
 	if envLogFileFlag := os.Getenv("SERVER_LOG" + suffix); envLogFileFlag != "" {

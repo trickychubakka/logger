@@ -4,6 +4,7 @@ package internal
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -11,6 +12,8 @@ import (
 	"fmt"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/mem"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"log"
 	"logger/config"
@@ -20,6 +23,8 @@ import (
 	"reflect"
 	"runtime"
 	"time"
+
+	pb "logger/cmd/proto"
 )
 
 // MetricsStorage аналог memstorage хранилища метрик.
@@ -331,5 +336,60 @@ func SendMetricsJSONBatch(metrics *MetricsStorage, reqURL string, config *config
 		return err
 	}
 	_ = response.Body.Close()
+	return nil
+}
+
+// MemstorageToBunch конвертация хранилища метрик типа MetricsStorage в pb.Bunch.
+func MemstorageToBunch(store MetricsStorage) (*pb.Bunch, error) {
+	var metrics []*pb.Metric
+	var p pb.Bunch
+
+	for k, v := range store.gaugeMap {
+		var tmpMetric pb.Metric
+		tmpMetric.Id = k
+		tmpMetric.Type = "gauge"
+		tmpMetric.Value = v
+		metrics = append(metrics, &tmpMetric)
+	}
+	for k, v := range store.counterMap {
+		var tmpMetric pb.Metric
+		tmpMetric.Id = k
+		tmpMetric.Type = "counter"
+		tmpMetric.Delta = v
+		metrics = append(metrics, &tmpMetric)
+	}
+	p.Metric = metrics
+	return &p, nil
+}
+
+func ProtoSendMetrics(metrics *MetricsStorage, config *config.AgentConfig) error {
+	//conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(config.GRPCRunAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+	// получаем переменную интерфейсного типа UsersClient,
+	// через которую будем отправлять сообщения
+	c := pb.NewMetricsBunchClient(conn)
+
+	b, err := MemstorageToBunch(*metrics)
+	if err != nil {
+		log.Println("ProtoSendMetrics: error in MemstorageToBunch", err)
+		return err
+	}
+	log.Println("ProtoSendMetrics: b is :", b)
+
+	resp, err := c.AddBunch(context.Background(), &pb.AddBunchRequest{
+		Bunch: b,
+	})
+	if err != nil {
+		log.Println("ProtoSendMetrics: error in AddBunch", err)
+		return err
+	}
+	if resp.Error != "" {
+		log.Println(resp.Error)
+	}
+
 	return nil
 }
