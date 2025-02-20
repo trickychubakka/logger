@@ -5,20 +5,21 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"log"
-	"logger/cmd/server/initconf"
+	"logger/config"
 	"logger/internal/handlers"
 	"logger/internal/storage/memstorage"
 	"os"
 	"time"
 )
 
+// Storager интерфейс с используемым методом.
 type Storager interface {
 	GetAllMetrics(ctx context.Context) (any, error)
 }
 
 // Save функция сохранения дампа метрик в файл.
 func Save(ctx context.Context, store Storager, fname string) error {
-	// сериализуем структуру в JSON формат
+	// сериализация структуры в JSON формат
 	metrics, err := store.GetAllMetrics(ctx)
 	if err != nil {
 		log.Println("error store serialisation in Save", err)
@@ -53,14 +54,14 @@ func Save(ctx context.Context, store Storager, fname string) error {
 	return nil
 }
 
-// Load функция чтения дампа метрик из файла. Применимо только для memstorage
+// Load функция чтения дампа метрик из файла. Применимо только для memstorage.
 func Load(fname string) (handlers.Storager, error) {
 	var store handlers.Storager
 	// Временное хранилище для Unmarshall-инга в необходимую структуру memstorage
 	var memStore memstorage.MemStorage
 	data, err := os.ReadFile(fname)
 	if err != nil {
-		log.Println("Save. Error read store dump file", fname)
+		log.Println("Load. Error read store dump file", fname)
 		return nil, err
 	}
 	// Использование метода Unmarshal пакета memstorage из-за не-публичности полей, аналог вызова err = json.Unmarshal(data, &memStore)
@@ -74,9 +75,9 @@ func Load(fname string) (handlers.Storager, error) {
 	return store, nil
 }
 
-// SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики
-// Для случая ключа STORE_INTERVAL = 0
-func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *initconf.Config) gin.HandlerFunc {
+// SyncDumpUpdate middleware для апдейта файла дампа метрик каждый раз при приходе новой метрики.
+// Для случая значения ключа STORE_INTERVAL = 0.
+func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 		log.Println("SyncDumpUpdate StoreMetricInterval :", conf.StoreMetricInterval)
@@ -84,7 +85,10 @@ func SyncDumpUpdate(ctx context.Context, store handlers.Storager, conf *initconf
 			log.Println("sync flush metric into dump")
 			if err := Save(ctx, store, conf.FileStoragePath); err != nil {
 				log.Println("SyncDumpUpdate error:", err)
+				c.Set("SyncDumpUpdate", "fail")
+				return
 			}
+			c.Set("SyncDumpUpdate", "success")
 		}
 	}
 }
