@@ -15,23 +15,6 @@ import (
 	"strings"
 )
 
-// Config объект конфигурации logger сервера метрик.
-//type Config struct {
-//	RunAddr             string          // Address and port to run server.
-//	Logfile             string          // Server log file.
-//	StoreMetricInterval int             // Store metrics dump to disk interval in sec.
-//	FileStoragePath     string          // File to save metrics to disk. For MemStorage type only.
-//	Restore             bool            // Restore metrics dump with server start. For MemStorage type only.
-//	DatabaseDSN         string          // DatabaseDSN
-//	UseDBConfig         bool            // Use dbconfig/config yaml file (conf/dbconfig.yaml).
-//	Key                 string          // Key for HMAC.
-//	PProfHTTPEnabled    bool            // Start PProfHTTP server.
-//	TestDBMode          bool            // Turn On test DB mode. For DB methods unit testing.
-//	TestMode            bool            // Turn On test mode. For unit testing.
-//	PathToPrivateKey    string          // Path to private key.
-//	PrivateKey          *rsa.PrivateKey // RSA private key.
-//}
-
 // IsValidIP функция для проверки на то, что строка является валидным ip адресом.
 func IsValidIP(ip string) bool {
 	res := net.ParseIP(ip)
@@ -79,18 +62,14 @@ func InitConfig(conf *config.Config) error {
 	if !FlagTest {
 		log.Println("start parsing flags")
 		flag.StringVar(&conf.RunAddr, "a", "localhost:8080", "address and port to run server. Default localhost:8080.")
-		//flag.StringVar(&conf.RunAddr, "a", "192.168.1.115:8080", "address and port to run server. Default localhost:8080.")
 		flag.StringVar(&conf.Logfile, "l", "", "server log file. Default empty.")
 		flag.IntVar(&conf.StoreMetricInterval, "i", 10, "store metrics to disk interval in sec. 0 -- sync saving. Default 10 sec.")
 		flag.StringVar(&conf.FileStoragePath, "f", "metrics.dump", "file to save metrics to disk. Default metric_dump.json.")
 		flag.BoolVar(&conf.Restore, "r", true, "true/false flag -- restore metrics dump with server start. Default true.")
-		//flag.StringVar(&conf.DatabaseDSN, "d", "", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
 		flag.StringVar(&conf.DatabaseDSN, "d", "postgres://testuser:123456@192.168.1.100:5432/testdb?sslmode=disable", "database DSN in format postgres://user:password@host:port/dbname?sslmode=disable. Default is empty.")
-		//flag.StringVar(&conf.Key, "k", "", "Key. Default empty.")
 		flag.StringVar(&conf.Key, "k", "superkey", "Key. Default empty.")
 		flag.StringVar(&flagTrustedSubnet, "t", "", "Trusted subnet in CIDR format alike 10.10.10.0/192. Default empty.")
 		flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "./id_rsa", "Path to private key. Default is ./id_rsa")
-		//flag.StringVar(&conf.PathToPrivateKey, "crypto-key", "", "Path to private key. Default is ./id_rsa")
 		flag.BoolVar(&envGenerateRSAKeys, "generate-keys", true, "To generation new RSA public and private "+
 			"keys and save them to the same with conf.PathToPrivateKey directory. Default false. "+
 			"Naming: private key filename defined with -generate-keys option, public filename will be `privateKey filename + .pub`")

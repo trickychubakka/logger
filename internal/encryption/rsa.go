@@ -226,13 +226,13 @@ func DecryptRequestHandler(_ context.Context, privateKey *rsa.PrivateKey) gin.Ha
 		decryptedBody, err := DecryptData(body, privateKey)
 		if err != nil {
 			log.Println("DecryptRequestHandler: DecryptData error", err)
-			c.Set("DecryptRequestHandler", "error") // For test.
+			c.Set("DecryptRequestHandler", "error")
 			c.Status(http.StatusInternalServerError)
 			return
 		}
 
 		c.Request.Body = io.NopCloser(bytes.NewReader(decryptedBody))
-		c.Set("DecryptRequestHandler", "success") // For test.
+		c.Set("DecryptRequestHandler", "success")
 		c.Next()
 		log.Println("DecryptRequestHandler END")
 	}

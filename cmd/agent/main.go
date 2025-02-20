@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	//configFile = `C:\JetBrains\GolandProjects\logger\internal\config\agent.json`
 	configFile = `./config/agent.json`
 )
 

@@ -96,7 +96,7 @@ func GzipRequestHandle(_ context.Context, config *config.Config) gin.HandlerFunc
 				if keyBool {
 					if err != nil {
 						log.Println("GzipRequestHandle: checkSign error", err)
-						c.Set("GzipRequestHandle", "error") // For test.
+						c.Set("GzipRequestHandle", "error")
 						c.Status(http.StatusBadRequest)
 						return
 					}
@@ -107,7 +107,7 @@ func GzipRequestHandle(_ context.Context, config *config.Config) gin.HandlerFunc
 				gz, err1 = gzip.NewReader(newBody)
 				if err1 != nil {
 					log.Println("Error in GzipRequestHandle1:", err1)
-					c.Set("GzipRequestHandle", "error") // For test.
+					c.Set("GzipRequestHandle", "error")
 					c.Status(http.StatusInternalServerError)
 					return
 				}
@@ -115,7 +115,7 @@ func GzipRequestHandle(_ context.Context, config *config.Config) gin.HandlerFunc
 				gz, err = gzip.NewReader(c.Request.Body)
 				if err != nil {
 					log.Println("Error in GzipRequestHandle2:", err)
-					c.Set("GzipRequestHandle", "error") // For test.
+					c.Set("GzipRequestHandle", "error")
 					c.Status(http.StatusInternalServerError)
 					return
 				}
@@ -129,7 +129,7 @@ func GzipRequestHandle(_ context.Context, config *config.Config) gin.HandlerFunc
 				}
 			}(gz)
 			c.Request.Body = gz
-			c.Set("GzipRequestHandle", "success") // For test.
+			c.Set("GzipRequestHandle", "success")
 			c.Next()
 		}
 	}

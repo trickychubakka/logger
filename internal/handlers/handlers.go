@@ -452,7 +452,7 @@ func CheckTrustedSubnet(conf *config.Config) gin.HandlerFunc {
 		// Разрешаем localhost коннекты.
 		if isLocalhost(userIP) {
 			log.Println("CheckTrustedSubnet. Agent X-Real-IP is localhost IP. Accepted.")
-			c.Set("checkTrustedSubnet", "localip") // For test.
+			c.Set("checkTrustedSubnet", "localip")
 			c.Next()
 			return
 		}
@@ -460,20 +460,20 @@ func CheckTrustedSubnet(conf *config.Config) gin.HandlerFunc {
 		err, ok := ipInNetwork(userIP, conf.TrustedSubnet)
 		if err != nil {
 			log.Println("checkTrustedSubnet: checkTrustedSubnet for X-Real-IP ", userIP, " error", err)
-			c.Set("checkTrustedSubnet", "error") // For test.
+			c.Set("checkTrustedSubnet", "error")
 			c.Status(http.StatusForbidden)
 			return
 		}
 
 		if !ok {
 			log.Println("checkTrustedSubnet: ip address", userIP, " is not in trusted network. Forbidden.")
-			c.Set("checkTrustedSubnet", "forbidden") // For test.
+			c.Set("checkTrustedSubnet", "forbidden")
 			c.Status(http.StatusForbidden)
 			return
 		}
 
 		log.Println("CheckTrustedSubnet. Agent X-Real-IP is in trusted ip network. Accepted.")
-		c.Set("checkTrustedSubnet", "success") // For test.
+		c.Set("checkTrustedSubnet", "success")
 		c.Next()
 	}
 }

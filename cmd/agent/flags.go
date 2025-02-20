@@ -50,17 +50,13 @@ func initConfig(conf *config.AgentConfig) error {
 	// Настройки переменных окружения имеют приоритет перед параметрами командной строки.
 	if !FlagTest {
 		flag.StringVar(&AddressFlag, "a", "localhost:8080", "address and port of logger server")
-		//flag.StringVar(&AddressFlag, "a", "192.168.1.115:8080", "address and port of logger server")
 		flag.StringVar(&ReportIntervalFlag, "r", "4", "agent report interval")
 		flag.StringVar(&PollIntervalFlag, "p", "1", "agent poll interval")
-		// Для логирования агента в лог файл необходимо определить флаг -l
 		flag.StringVar(&LogFileFlag, "f", "", "agent log file")
 		flag.StringVar(&key, "k", "", "key")
-		//flag.StringVar(&key, "k", "superkey", "key")
 		flag.StringVar(&RateLimitFlag, "l", "10", "Rate limit for agent connections to server.")
 		flag.BoolVar(&conf.PProfHTTPEnabled, "t", false, "Flag for enabling pprof web server. Default false.")
 		flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
-		//flag.StringVar(&conf.PathToPublicKey, "crypto-key", "./id_rsa.pub", "Path to public key. Default is ./id_rsa.pub")
 		flag.BoolVar(&conf.GRPCEnabled, "g", true, "Flag for enabling grpc. Default false.")
 		flag.StringVar(&conf.GRPCRunAddr, "grpc-address", "localhost:3200", "address and port of gRPC server. Default localhost:3200.")
 
